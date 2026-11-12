@@ -63,7 +63,8 @@
   .gtop .t{font-family:Cinzel,serif;letter-spacing:.12em;font-size:18px}
   .gtop .who{color:var(--muted);font-size:13px}
   .tabs{display:flex;gap:6px;padding:0 12px 10px}
-  .tab{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:10px 6px;font-size:14px;position:relative}
+  .tab{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:10px 4px;font-size:13px;position:relative;min-width:0}
+  .tab[data-tab="killers"]{flex:0 0 44px}
   .tab:hover{background:var(--panel2)}
   .tab.on{background:var(--panel2);color:var(--text);border-color:var(--red)}
   .tab .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red2)}
@@ -101,6 +102,26 @@
   .sys{align-self:center;color:var(--muted);font-size:12px;text-align:center}
   .send{display:flex;gap:8px;margin-top:10px}
   .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px}
+  .phasecard{text-align:center;padding:16px}
+  .phTitle{font-family:"Noto Serif",serif;font-size:24px;font-weight:800;color:var(--gold);margin-bottom:4px}
+  .phasecard.night{background:linear-gradient(180deg,#141a2e,#10121c);border-color:#2b3456}
+  .phasecard.day{background:linear-gradient(180deg,#2b2214,#1a1510);border-color:#4f3f22}
+  .phasecard.ended{border-color:var(--gold)}
+  .choices{display:grid;gap:8px}
+  .choice{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
+    background:#0f0c13;border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:12px;font-weight:500}
+  .choice:hover{background:#1a1520}
+  .choice.sel{border-color:var(--red2);background:#2a121a}
+  .choice .tally{font-size:12px;color:var(--muted);text-align:right}
+  .choice .tally b{color:var(--gold);font-size:14px}
+  .partner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#1d1218;font-size:14px}
+  .partner b{color:var(--red2)}
+  .dead .pname{text-decoration:line-through;color:var(--muted)}
+  .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+  .log li:last-child{border-bottom:0}
+  .reveal li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .reveal li span:last-child{color:var(--gold);font-weight:600}
+  .deadnote{padding:10px;border-radius:10px;background:#1d1620;color:var(--muted);font-size:13px;text-align:center;margin-top:10px}
   .dmlist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
   .dmnote{color:var(--muted);font-size:13px;text-align:center;margin:2px 0 4px}
   .dmrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);
@@ -179,13 +200,36 @@
     <span class="who" id="gameWho"></span>
   </div>
   <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="role">Ρόλος</button>
+    <button class="tab on" data-tab="flow">Παιχνίδι<span class="dot hidden" id="dotFlow"></span></button>
+    <button class="tab" data-tab="role">Ρόλος</button>
     <button class="tab" data-tab="all">Όλοι<span class="dot hidden" id="dotAll"></span></button>
     <button class="tab" data-tab="dm">Ιδιωτικά<span class="dot hidden" id="dotDm"></span></button>
     <button class="tab hidden" data-tab="killers" id="killersTab">🔪<span class="dot hidden" id="dotKillers"></span></button>
   </div>
 
-  <div class="pane" data-pane="role" style="overflow-y:auto">
+  <div class="pane" data-pane="flow" style="overflow-y:auto">
+    <div class="card phasecard" id="phaseCard">
+      <div class="phTitle" id="phTitle"></div>
+      <div class="note" id="phSub"></div>
+    </div>
+    <div class="card" id="actionCard">
+      <h2 id="actTitle"></h2>
+      <p class="note" id="actNote"></p>
+      <div class="choices" id="actChoices"></div>
+      <p class="note" id="actProgress" style="margin-top:10px"></p>
+    </div>
+    <div id="hostFlow"></div>
+    <div class="card">
+      <h2>Παίκτες</h2>
+      <ul class="players" id="aliveList"></ul>
+    </div>
+    <div class="card">
+      <h2>Τι έχει γίνει</h2>
+      <ul class="log" id="logList"></ul>
+    </div>
+  </div>
+
+  <div class="pane hidden" data-pane="role" style="overflow-y:auto">
     <div class="rolecard closed" id="roleCard">
       <div id="roleClosed">
         <div class="rolelabel">Ο ρόλος σου</div>
@@ -389,7 +433,7 @@ const pid = TEST ? "test-" + TEST : loadPid();
 if (TEST) {
   const b = document.createElement("div");
   b.textContent = "🧪 Λειτουργία δοκιμής · παίκτης " + TEST;
-  b.style.cssText = "position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9;background:#d9b46a;color:#1a1208;font:600 11px Inter,sans-serif;padding:2px 10px;border-radius:0 0 8px 8px;opacity:.9;pointer-events:none";
+  b.style.cssText = "position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9;background:#d9b46a;color:#1a1208;font:600 11px Inter,sans-serif;padding:2px 10px;border-radius:0 0 8px 8px;opacity:.9;pointer-events:none;white-space:nowrap";
   document.body.appendChild(b);
   document.title = "🧪" + TEST + " · " + document.title;
 }
@@ -402,7 +446,7 @@ const R = path => ref(db, "palermo/" + path);
 let players = {};          // pid -> {name, ts}
 let game = null;           // {status, round, roles:{pid:roleId}}
 let gotPlayers = false, gotGame = false;
-let tab = "role";
+let tab = "flow";
 let roleOpen = false;
 let chatSubs = {};         // key -> unsubscribe
 let chatRound = null;
@@ -530,11 +574,14 @@ function showGame(roleId){
     startChat("all", $("chatAll"), "dotAll");
     if (seesKillers) startChat("killers", $("chatKillers"), "dotKillers");
     startDMs();
+    startActs();
   } else if (seesKillers && !chatSubs.killers) {
     startChat("killers", $("chatKillers"), "dotKillers");
   }
 
   if (tab === "dm" && !dmOpen) renderDMList();
+  renderFlow();
+  applyDeadLocks();
   renderHost($("hostGame"));
 }
 
@@ -575,6 +622,7 @@ function setTab(t){
   document.querySelectorAll(".pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t));
   if (t === "all") { $("dotAll").classList.add("hidden"); scrollBottom($("chatAll")); }
   if (t === "killers") { $("dotKillers").classList.add("hidden"); scrollBottom($("chatKillers")); }
+  if (t === "flow") $("dotFlow").classList.add("hidden");
   if (t === "dm") {
     if (dmOpen && dm[dmOpen]) { dm[dmOpen].unread = 0; scrollBottom($("dmBox")); }
     renderDMList(); updateDmDot();
@@ -798,6 +846,295 @@ function renderHost(container){
   };
 }
 
+
+// =====================================================================
+// ΡΟΗ ΠΑΙΧΝΙΔΙΟΥ: νύχτα → μέρα (ψηφοφορία) → νύχτα ... μέχρι νικητή
+// =====================================================================
+let acts = {};            // palermo/act/<round>/<phaseKey>/<kind>/<pid> = target
+let resolving = false;
+let lastPhaseSeen = null;
+const phaseKey = g => ({ night: "n", day: "d", kamikaze: "k" }[g.phase] || "x") + g.day;
+const deadIn = (g, id) => !!(g.dead && g.dead[id]);
+const aliveIn = g => Object.keys(g.roles || {}).filter(id => !deadIn(g, id))
+  .sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
+const amDead = () => !!(game && deadIn(game, pid));
+const PHASE_ACTS = () => acts[phaseKey(game)] || {};
+const doAction = (kind, target) =>
+  set(R(`act/${game.round}/${phaseKey(game)}/${kind}/${pid}`), target);
+
+function startActs(){
+  acts = {};
+  chatSubs["acts"] = onValue(R("act/" + game.round), snap => {
+    acts = snap.val() || {};
+    if (myRoleId()) { renderFlow(); tryResolve(false); }
+  });
+}
+
+// --- Κατάσταση νύχτας ---
+function nightStatus(g, A){
+  const al = aliveIn(g);
+  const killers = al.filter(id => KILLERS.includes(g.roles[id]));
+  const kills = A.kill || {};
+  const picks = killers.map(id => kills[id]).filter(Boolean);
+  const same = picks.length > 0 && picks.every(x => x === picks[0]);
+  const agreed = same && picks.length === killers.length ? picks[0] : null;
+  const doc = al.find(id => g.roles[id] === "doctor");
+  const save = doc ? (A.save || {})[doc] || null : null;
+  const done = (killers.length === 0 || !!agreed) && (!doc || !!save);
+  return { done, target: agreed, forced: same ? picks[0] : null, save, killers, doc };
+}
+// --- Κατάσταση ψηφοφορίας ---
+function dayStatus(g, A){
+  const al = aliveIn(g);
+  const votes = A.vote || {};
+  const voted = al.filter(id => votes[id]);
+  const tally = {}, voters = {};
+  let blank = 0;
+  voted.forEach(id => {
+    const v = votes[id], w = g.roles[id] === "mayor" ? 2 : 1;
+    if (v === "skip") { blank += w; (voters.skip = voters.skip || []).push(id); return; }
+    if (deadIn(g, v)) return;
+    tally[v] = (tally[v] || 0) + w; (voters[v] = voters[v] || []).push(id);
+  });
+  const max = Math.max(0, ...Object.values(tally));
+  const top = Object.keys(tally).filter(id => tally[id] === max);
+  const out = max > 0 && top.length === 1 && max > blank ? top[0] : null;
+  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, blank, out };
+}
+function kamiStatus(g, A){
+  const t = (A.kami || {})[g.kami] || null;
+  return { done: !!t, target: t };
+}
+
+function checkWin(g, log){
+  const al = aliveIn(g);
+  const k = al.filter(id => KILLERS.includes(g.roles[id])).length;
+  const others = al.length - k;
+  if (k === 0) { g.phase = "ended"; g.winner = "town"; log("🏆 Κέρδισε η Πόλη! Βγήκαν και οι δύο δολοφόνοι."); return true; }
+  if (k >= others) { g.phase = "ended"; g.winner = "killers"; log("🏆 Κέρδισαν οι Δολοφόνοι! Έμειναν όσοι και οι υπόλοιποι."); return true; }
+  return false;
+}
+function goNight(g, log){ g.phase = "night"; g.day = (g.day || 1) + 1; log(`🌙 Πέφτει η νύχτα ${g.day}.`); }
+
+async function tryResolve(force){
+  if (!game || game.status !== "playing" || !game.phase || game.phase === "ended") return;
+  const A = PHASE_ACTS();
+  const st = game.phase === "night" ? nightStatus(game, A) : game.phase === "day" ? dayStatus(game, A) : kamiStatus(game, A);
+  if (!force && !st.done) return;
+  if (resolving) return;
+  resolving = true;
+  const expect = { round: game.round, phase: game.phase, day: game.day };
+  try {
+    await runTransaction(R("game"), cur => {
+      if (!cur || cur.round !== expect.round || cur.phase !== expect.phase || cur.day !== expect.day) return;   // κάποιος άλλος πρόλαβε
+      const g = cur;
+      g.dead = g.dead || {};
+      g.log = Object.values(g.log || {});
+      const log = t => g.log.push({ t, ts: Date.now() });
+      const nm = id => nameOf(id);
+
+      if (g.phase === "night") {
+        const s = nightStatus(g, A);
+        const tgt = s.target || (force ? s.forced : null);
+        if (tgt && tgt !== s.save && !deadIn(g, tgt)) {
+          g.dead[tgt] = true;
+          log(`🌅 Ξημέρωσε. Τη νύχτα σκοτώθηκε ο/η ${nm(tgt)}.`);
+        } else {
+          log("🌅 Ξημέρωσε. Κανείς δεν πέθανε απόψε!");
+        }
+        if (!checkWin(g, log)) { g.phase = "day"; log(`☀️ Μέρα ${g.day}: συζητήστε και ψηφίστε ποιον θα βγάλετε.`); }
+
+      } else if (g.phase === "day") {
+        const s = dayStatus(g, A);
+        if (!s.out) {
+          log("🗳️ Η ψηφοφορία δεν έβγαλε κανέναν (ισοπαλία ή λευκά).");
+          goNight(g, log);
+        } else {
+          g.dead[s.out] = true;
+          const role = g.roles[s.out];
+          if (role === "crazy") {
+            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}… που ήταν η Τρέλα!`);
+            g.phase = "ended"; g.winner = "crazy";
+            log("🏆 Κέρδισε η Τρέλα! Κατάφερε να τη βγάλετε.");
+          } else if (role === "kamikaze") {
+            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}… που ήταν ο Καμικάζι! Διαλέγει ποιον θα πάρει μαζί του.`);
+            g.phase = "kamikaze"; g.kami = s.out;
+          } else {
+            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}.`);
+            if (!checkWin(g, log)) goNight(g, log);
+          }
+        }
+
+      } else if (g.phase === "kamikaze") {
+        const s = kamiStatus(g, A);
+        if (s.target && !deadIn(g, s.target)) { g.dead[s.target] = true; log(`💥 Ο Καμικάζι πήρε μαζί του τον/την ${nm(s.target)}.`); }
+        else log("💥 Ο Καμικάζι δεν πήρε κανέναν μαζί του.");
+        g.kami = null;
+        if (!checkWin(g, log)) goNight(g, log);
+      }
+      return g;
+    });
+  } catch (e) { console.warn(e); }
+  finally { resolving = false; }
+}
+
+// --- Οθόνη "Παιχνίδι" ---
+function choiceBtn(label, sel, onClick, right){
+  const b = document.createElement("button"); b.type = "button";
+  b.className = "choice" + (sel ? " sel" : "");
+  const l = document.createElement("span"); l.textContent = (sel ? "✔ " : "") + label; b.appendChild(l);
+  if (right) b.appendChild(right);
+  b.onclick = onClick;
+  return b;
+}
+
+function renderFlow(){
+  if (!game || !game.phase) return;
+  const g = game, me = pid, myRole = g.roles[me], A = PHASE_ACTS();
+  const dead = amDead();
+  const al = aliveIn(g);
+  const card = $("phaseCard");
+  card.className = "card phasecard " + (g.phase === "night" ? "night" : g.phase === "ended" ? "ended" : "day");
+
+  // Νέα φάση → κόκκινη τελεία αν είσαι σε άλλη καρτέλα
+  const pk = g.round + ":" + g.phase + ":" + g.day;
+  if (lastPhaseSeen && lastPhaseSeen !== pk && tab !== "flow") $("dotFlow").classList.remove("hidden");
+  lastPhaseSeen = pk;
+
+  const title = $("phTitle"), sub = $("phSub");
+  const aTitle = $("actTitle"), aNote = $("actNote"), box = $("actChoices"), prog = $("actProgress");
+  box.textContent = ""; aNote.textContent = ""; prog.textContent = "";
+  $("actionCard").classList.remove("hidden");
+
+  if (g.phase === "night") {
+    title.textContent = `🌙 Νύχτα ${g.day}`;
+    sub.textContent = "Η πόλη κοιμάται. Οι δολοφόνοι διαλέγουν θύμα.";
+    const st = nightStatus(g, A);
+    if (dead) {
+      aTitle.textContent = "☠️ Είσαι εκτός παιχνιδιού";
+      aNote.textContent = "Μπορείς να παρακολουθείς, αλλά όχι να παίζεις ή να γράφεις.";
+    } else if (KILLERS.includes(myRole)) {
+      aTitle.textContent = "🔪 Διάλεξε θύμα";
+      aNote.textContent = st.killers.length > 1
+        ? "Πρέπει να διαλέξετε και οι δύο τον ίδιο παίκτη. Συνεννοηθείτε στην καρτέλα 🔪."
+        : "Διάλεξε ποιον θα σκοτώσεις απόψε.";
+      const mine = (A.kill || {})[me];
+      st.killers.filter(id => id !== me).forEach(o => {
+        const pk = (A.kill || {})[o];
+        const d = document.createElement("div"); d.className = "partner";
+        d.append(nameOf(o) + ": ");
+        const b = document.createElement("b"); b.textContent = pk ? nameOf(pk) : "δεν έχει διαλέξει ακόμα"; d.appendChild(b);
+        box.appendChild(d);
+      });
+      al.filter(id => !KILLERS.includes(g.roles[id])).forEach(id =>
+        box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kill", id))));
+      prog.textContent = st.target ? "✔ Συμφωνήσατε." : "";
+    } else if (myRole === "doctor") {
+      aTitle.textContent = "💉 Ποιον θα προστατέψεις απόψε;";
+      aNote.textContent = "Αν οι δολοφόνοι διαλέξουν αυτόν τον παίκτη, δεν θα πεθάνει.";
+      const mine = (A.save || {})[me];
+      al.forEach(id => box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : ""), mine === id, () => doAction("save", id))));
+    } else {
+      aTitle.textContent = "😴 Κοιμάσαι";
+      aNote.textContent = "Περίμενε να ξημερώσει. Θα δεις εδώ τι έγινε τη νύχτα.";
+    }
+    if (!st.done) prog.textContent = prog.textContent || "Περιμένουμε τις κινήσεις της νύχτας…";
+
+  } else if (g.phase === "day") {
+    title.textContent = `☀️ Μέρα ${g.day}`;
+    sub.textContent = "Συζητήστε και ψηφίστε ποιον θα βγάλετε από το παιχνίδι.";
+    const st = dayStatus(g, A);
+    const mine = (A.vote || {})[me];
+    aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
+    aNote.textContent = dead ? "Είσαι εκτός παιχνιδιού και δεν ψηφίζεις."
+      : "Η ψηφοφορία είναι φανερή. Μπορείς να αλλάξεις ψήφο μέχρι να ψηφίσουν όλοι."
+        + (myRole === "mayor" ? " Ως Δήμαρχος, η ψήφος σου μετράει διπλή." : "")
+        + " Ισοπαλία = δεν βγαίνει κανείς.";
+    const tallyEl = id => {
+      const t = document.createElement("span"); t.className = "tally";
+      const n = id === "skip" ? st.blank : (st.tally[id] || 0);
+      if (n) {
+        const b = document.createElement("b"); b.textContent = n + (n === 1 ? " ψήφος" : " ψήφοι"); t.appendChild(b);
+        t.appendChild(document.createElement("br"));
+        t.append((st.voters[id] || []).map(nameOf).join(", "));
+      }
+      return t;
+    };
+    al.filter(id => id !== me).forEach(id =>
+      box.appendChild(choiceBtn(nameOf(id), mine === id, dead ? () => {} : () => doAction("vote", id), tallyEl(id))));
+    box.appendChild(choiceBtn("Λευκό (κανένας)", mine === "skip", dead ? () => {} : () => doAction("vote", "skip"), tallyEl("skip")));
+    prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}.`;
+
+  } else if (g.phase === "kamikaze") {
+    title.textContent = "💥 Καμικάζι";
+    sub.textContent = `Ο/Η ${nameOf(g.kami)} ήταν ο Καμικάζι και διαλέγει ποιον θα πάρει μαζί του.`;
+    if (me === g.kami) {
+      aTitle.textContent = "💥 Ποιον παίρνεις μαζί σου;";
+      aNote.textContent = "Ο παίκτης που θα διαλέξεις βγαίνει κι αυτός από το παιχνίδι.";
+      const mine = (A.kami || {})[me];
+      al.forEach(id => box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kami", id))));
+    } else {
+      aTitle.textContent = "⏳ Περιμένετε";
+      aNote.textContent = "Ο Καμικάζι διαλέγει…";
+    }
+
+  } else if (g.phase === "ended") {
+    const W = { town: "🏆 Κέρδισε η Πόλη!", killers: "🏆 Κέρδισαν οι Δολοφόνοι!", crazy: "🏆 Κέρδισε η Τρέλα!" };
+    title.textContent = W[g.winner] || "🏁 Τέλος";
+    const myTeam = ROLE_BY_ID[myRole].team;
+    const won = (g.winner === "town" && myTeam === "Πόλη") || (g.winner === "killers" && myTeam === "Δολοφόνοι") || (g.winner === "crazy" && myRole === "crazy");
+    sub.textContent = won ? "Κέρδισες! 🎉" : "Έχασες αυτή τη φορά.";
+    aTitle.textContent = "Ποιος ήταν ποιος";
+    const ul = document.createElement("ul"); ul.className = "reveal";
+    Object.keys(g.roles).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0)).forEach(id => {
+      const li = document.createElement("li");
+      const a = document.createElement("span"); a.textContent = nameOf(id) + (deadIn(g, id) ? " ☠️" : "") + (id === me ? " (εσύ)" : "");
+      const b = document.createElement("span"); b.textContent = ROLE_BY_ID[g.roles[id]].name;
+      li.append(a, b); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    aNote.textContent = amHost() ? "Πάτα «Νέος γύρος» από κάτω για να ξαναπαίξετε." : "Ο host μπορεί να ξεκινήσει νέο γύρο.";
+  }
+
+  // Host: κουμπί για να προχωρήσει η φάση
+  const hf = $("hostFlow"); hf.textContent = "";
+  if (amHost() && g.phase !== "ended") {
+    const c = document.createElement("div"); c.className = "card host";
+    const n = document.createElement("p"); n.className = "note"; n.style.margin = "0 0 10px";
+    n.textContent = "Host: αν κάποιος αργεί ή λείπει, μπορείς να προχωρήσεις τη φάση με όσες κινήσεις/ψήφους έχουν γίνει.";
+    const b = document.createElement("button"); b.className = "ghost big"; b.type = "button";
+    b.textContent = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? "⏭ Κλείσε την ψηφοφορία" : "⏭ Προχώρα";
+    b.onclick = () => { if (b.dataset.sure) { tryResolve(true); } else { b.dataset.sure = "1"; b.textContent = "Σίγουρα; Πάτα ξανά"; } };
+    c.append(n, b); hf.appendChild(c);
+  }
+
+  // Λίστα παικτών
+  const ul = $("aliveList"); ul.textContent = "";
+  Object.keys(g.roles).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0)).forEach((id, i) => {
+    const li = document.createElement("li"); if (deadIn(g, id)) li.className = "dead";
+    const num = document.createElement("span"); num.className = "num"; num.textContent = deadIn(g, id) ? "☠️" : i + 1;
+    const name = document.createElement("span"); name.className = "pname"; name.textContent = nameOf(id);
+    if (id === me) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
+    li.append(num, name); ul.appendChild(li);
+  });
+
+  // Ιστορικό (νεότερα πάνω)
+  const log = $("logList"); log.textContent = "";
+  Object.values(g.log || {}).slice().reverse().forEach(e => {
+    const li = document.createElement("li"); li.textContent = e.t; log.appendChild(li);
+  });
+}
+
+// Οι νεκροί δεν γράφουν πουθενά
+function applyDeadLocks(){
+  const d = amDead();
+  document.querySelectorAll("#game form.send").forEach(f => {
+    f.querySelectorAll("input,button").forEach(el => el.disabled = d);
+    const inp = f.querySelector("input");
+    if (d) inp.placeholder = "Είσαι εκτός παιχνιδιού";
+  });
+}
+
 async function deal(force){
   const ids = sortedPlayers().map(p => p.id);
   if (ids.length < MIN_PLAYERS || ids.length > MAX_PLAYERS) return;
@@ -807,7 +1144,9 @@ async function deal(force){
     const picked = shuffle(rolesFor(ids.length));
     const roles = {};
     ids.forEach((id, i) => roles[id] = picked[i]);
-    return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles };
+    return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles,
+             phase: "night", day: 1, dead: {},
+             log: [{ t: "🌙 Πέφτει η πρώτη νύχτα. Οι δολοφόνοι διαλέγουν θύμα, ο Γιατρός ποιον θα προστατέψει.", ts: Date.now() }] };
   });
   if (res.committed && prevRound) remove(R("chat/" + prevRound)).catch(() => {});
 }
