@@ -1,6 +1,6 @@
 // Palermo service worker: η εφαρμογή ανοίγει γρήγορα και παίρνει πάντα την τελευταία έκδοση.
-const CACHE = "palermo-v1";
-const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"];
+const CACHE = "palermo-v2";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -17,8 +17,8 @@ self.addEventListener("fetch", e => {
   e.respondWith(
     fetch(req).then(res => {
       const copy = res.clone();
-      if (res.ok) caches.open(CACHE).then(c => c.put(req.mode === "navigate" ? "/" : req, copy));
+      if (res.ok) caches.open(CACHE).then(c => c.put(req.mode === "navigate" ? "./" : req, copy));
       return res;
-    }).catch(() => caches.match(req.mode === "navigate" ? "/" : req).then(r => r || caches.match("/")))
+    }).catch(() => caches.match(req.mode === "navigate" ? "./" : req).then(r => r || caches.match("./")))
   );
 });
