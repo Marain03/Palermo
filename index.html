@@ -123,14 +123,13 @@
   .tab .dot{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--wine);box-shadow:0 0 0 2px var(--bg2)}
 
   /* ---------- Το τραπουλόχαρτο του ρόλου ---------- */
-  .rolecard{position:relative;overflow:hidden;border-radius:18px;padding:40px 24px 70px;text-align:center;cursor:pointer;user-select:none;
+  .rolecard{position:relative;overflow:hidden;border-radius:18px;padding:36px 24px 30px;text-align:center;cursor:pointer;user-select:none;
     background:linear-gradient(160deg,var(--card-a),var(--card-b));color:var(--card-ink);border:1px solid var(--card-line);
     box-shadow:0 14px 34px rgba(5,15,35,.35)}
   .rolecard::before,.rolecard::after{content:"";position:absolute;width:74px;height:74px;pointer-events:none;
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23F2F6FA' fill-opacity='.85'/%3E%3Ccircle cx='20' cy='20' r='3.2' fill='%23E0A526'/%3E%3Cpath d='M0 0h7L0 7zM40 0h-7l7 7zM0 40h7l-7-7zM40 40h-7l7-7z' fill='%23E0A526'/%3E%3C/svg%3E") 0 0/37px 37px;
     opacity:.9}
-  .rolecard::before{top:0;left:0;border-bottom-right-radius:18px}
-  .rolecard::after{bottom:0;right:0;border-top-left-radius:18px}
+  .rolecard::before,.rolecard::after{display:none}
   /* Πίσω όψη (κρυμμένος ρόλος) */
   .rolecard.closed{background:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23ffffff14'/%3E%3C/svg%3E") 0 0/44px 44px,
@@ -342,7 +341,7 @@
     <button class="tab on" data-tab="flow"><span class="ic">🌙</span>Παιχνίδι<span class="dot hidden" id="dotFlow"></span></button>
     <button class="tab" data-tab="role"><span class="ic">🎭</span>Ρόλος</button>
     <button class="tab" data-tab="hist"><span class="ic">📜</span>Ιστορικό<span class="dot hidden" id="dotHist"></span></button>
-    <button class="tab" data-tab="dm"><span class="ic">💬</span>Ιδιωτικά<span class="dot hidden" id="dotDm"></span></button>
+    <button class="tab" data-tab="dm"><span class="ic">💬</span>Συνομιλίες<span class="dot hidden" id="dotDm"></span></button>
     <button class="tab hidden" data-tab="killers" id="killersTab"><span class="ic">🔪</span>Δολοφόνοι<span class="dot hidden" id="dotKillers"></span></button>
   </div>
 
@@ -412,12 +411,9 @@
   <div class="pane hidden" data-pane="hist" style="overflow-y:auto">
     <div class="card">
       <h2>📜 Ιστορικό</h2>
-      <p class="note" style="margin-top:-6px">Ό,τι έγινε φανερά σε κάθε γύρο: ποιος πέθανε, ποιος ψήφισε ποιον, ποιος βγήκε.</p>
+      <p class="note" style="margin-top:-6px">Ποιος ψήφισε ποιον, ποιος βγήκε, ποιος πέθανε.</p>
       <div id="histList"></div>
-      <details class="rules" style="margin-top:12px">
-        <summary>Όλες οι ανακοινώσεις</summary>
-        <ul class="log" id="logList" style="margin-top:8px"></ul>
-      </details>
+      <ul class="log hidden" id="logList"></ul>
     </div>
   </div>
 
@@ -1482,7 +1478,7 @@ function phaseSummary(g, fromPk){
     box.appendChild(el("div", "mi", "🌅"));
     box.appendChild(el("div", "mt", "Ξημέρωσε"));
     if (g.day === 1) box.appendChild(el("p", "mp c", "Όλοι ξέρουν πλέον τον ρόλο τους."));
-    box.appendChild(el("p", "mp c", died.length ? (died.length > 1 ? "Τη νύχτα πέθαναν: " : "Τη νύχτα πέθανε: ") + died.map(nameOf).join(", ") : "Κανείς δεν πέθανε απόψε!"));
+    if (died.length || g.day > 1) box.appendChild(el("p", "mp c", died.length ? (died.length > 1 ? "Τη νύχτα πέθαναν: " : "Τη νύχτα πέθανε: ") + died.map(nameOf).join(", ") : "Κανείς δεν πέθανε απόψε!"));
     box.appendChild(el("p", "ms", `☀️ Μέρα ${g.day}: συζητήστε και ψηφίστε ποιον θα βγάλετε.`));
     nodes.push(box);
     return { nodes, btn: "Πάμε στην ψηφοφορία" };
@@ -1619,7 +1615,7 @@ function renderFlow(){
   const card = $("phaseCard");
   card.className = "card phasecard " + (g.phase === "night" ? "night" : g.phase === "ended" ? "ended" : "day");
   const isDay = g.phase === "day" || g.phase === "kamikaze";
-  document.body.classList.toggle("is-day", isDay);
+  document.body.classList.remove("is-day");   // τα χρώματα μένουν ίδια μέρα και νύχτα
   const ic = document.querySelector('.tab[data-tab="flow"] .ic'); if (ic) ic.textContent = g.phase === "ended" ? "🏆" : isDay ? "☀️" : "🌙";
 
   // Νέα φάση → κόκκινη τελεία αν είσαι σε άλλη καρτέλα
@@ -1969,16 +1965,17 @@ function historyBlock(e){
   {
     const b = document.createElement("div");
     if (e.k === "night") {
+      const died = Object.values(e.died || {});
+      if (e.day === 1 && !died.length) return null;      // η Νύχτα 1 είναι μόνο αναγνώριση
       b.className = "hblock night";
       const h = document.createElement("h3"); h.textContent = `🌙 Νύχτα ${e.day}`; b.appendChild(h);
-      const died = Object.values(e.died || {});
       if (died.length) {
         const p = P(b, "", "hres"); p.append(died.length > 1 ? "Πέθαναν: " : "Πέθανε: ");
         const x = document.createElement("b"); x.textContent = died.map(nameOf).join(", "); p.appendChild(x);
       } else P(b, "Κανείς δεν πέθανε.", "hres");
     } else if (e.k === "day") {
       b.className = "hblock day";
-      const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}: ψηφοφορία`; b.appendChild(h);
+      const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}`; b.appendChild(h);
       const votes = e.votes || {}, dbl = Object.values(e.dbl || {});
       const ids = Object.keys(votes).sort((a, c) => ((players[a] || {}).ts || 0) - ((players[c] || {}).ts || 0));
       if (ids.length) {
@@ -1992,7 +1989,7 @@ function historyBlock(e){
         b.appendChild(grid);
         const tally = {};
         ids.forEach(v => tally[votes[v]] = (tally[votes[v]] || 0) + (dbl.includes(v) ? 2 : 1));
-        P(b, "Σύνολο: " + Object.entries(tally).sort((x, y) => y[1] - x[1]).map(([id, n]) => `${nameOf(id)} ${n}`).join(" · "), "note");
+
       }
       if (e.out) {
         const p = P(b, "", "hres"); p.append("Βγήκε: ");
