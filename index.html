@@ -345,15 +345,16 @@
 <div class="wrap hidden" id="home">
   <header><div class="moon"></div><h1>PALERMO</h1><div class="sub">Βραδιά παιχνιδιού</div></header>
   <div class="card">
-    <h2>Νέο τραπέζι</h2>
-    <p class="note">Γίνεσαι ο host και στέλνεις τον κωδικό στους φίλους σου.</p>
-    <button type="button" class="big" id="createBtn">Φτιάξε τραπέζι</button>
+    <h2>Create a game</h2>
+    <p class="note">Γίνεσαι ο host και παίρνεις έναν κωδικό για να τον στείλεις στους φίλους σου.</p>
+    <button type="button" class="big" id="createBtn">Create a game</button>
   </div>
   <div class="card">
-    <h2>Έχω κωδικό</h2>
+    <h2>Join a game</h2>
+    <p class="note">Γράψε τον κωδικό που σου έστειλε ο host.</p>
     <form id="codeForm" class="row" autocomplete="off">
       <input id="codeInput" maxlength="4" placeholder="π.χ. KQ7M" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:.2em;font-weight:600">
-      <button type="submit" id="codeBtn">Μπαίνω</button>
+      <button type="submit" id="codeBtn">Join</button>
     </form>
     <div class="msg" id="homeMsg"></div>
   </div>
@@ -369,7 +370,7 @@
 
   <div class="card roomcard">
     <div>
-      <div class="note" style="margin:0">Κωδικός τραπεζιού</div>
+      <div class="note" style="margin:0">Κωδικός παιχνιδιού</div>
       <div class="roomcode" id="roomCode"></div>
     </div>
     <div class="avbtns">
@@ -789,7 +790,7 @@ if (!ROOM) {
     $("codeBtn").disabled = true;
     try {
       const ex = await get(roomRef(c, "meta"));
-      if (!ex.exists()) { msg("Δεν βρέθηκε τραπέζι με κωδικό " + c + "."); $("codeBtn").disabled = false; return; }
+      if (!ex.exists()) { msg("Δεν βρέθηκε παιχνίδι με κωδικό " + c + "."); $("codeBtn").disabled = false; return; }
       goRoom(c); return;
     } catch (e) { msg("Δεν υπάρχει σύνδεση. Δοκίμασε ξανά."); }
     $("codeBtn").disabled = false;
@@ -803,7 +804,7 @@ const R = path => roomRef(ROOM, path);
 const ROOM_LINK = () => location.origin + location.pathname + "?t=" + ROOM;
 $("roomCode").textContent = ROOM;
 $("shareBtn").onclick = async () => {
-  const text = "Έλα να παίξουμε Παλέρμο! Κωδικός τραπεζιού: " + ROOM;
+  const text = "Έλα να παίξουμε Παλέρμο! Κωδικός: " + ROOM;
   try {
     if (navigator.share) { await navigator.share({ title: "Palermo", text, url: ROOM_LINK() }); return; }
   } catch (e) { if (e && e.name === "AbortError") return; }
