@@ -100,6 +100,19 @@
   .sys{align-self:center;color:var(--muted);font-size:12px;text-align:center}
   .send{display:flex;gap:8px;margin-top:10px}
   .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px}
+  .dmlist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .dmnote{color:var(--muted);font-size:13px;text-align:center;margin:2px 0 4px}
+  .dmrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);
+    color:var(--text);padding:12px 14px;border-radius:14px;font-weight:500}
+  .dmrow:hover{background:var(--panel2)}
+  .dmrow .av{width:36px;height:36px;border-radius:50%;background:#2a1f30;display:grid;place-items:center;font-weight:700;color:var(--gold);flex:none}
+  .dmrow .mid{flex:1;min-width:0}
+  .dmrow .nm{font-size:15px}
+  .dmrow .pv{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+  .dmrow .cnt{background:var(--red2);color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;flex:none}
+  .dmthread{flex:1;min-height:0;display:flex;flex-direction:column}
+  .dmhead{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:15px}
+  .dmhead b{color:var(--gold)}
 
   .host{border-color:rgba(217,180,106,.45)}
   .summary li{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
@@ -165,9 +178,10 @@
     <span class="who" id="gameWho"></span>
   </div>
   <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="role">Ο ρόλος μου</button>
-    <button class="tab" data-tab="all">Συνομιλία<span class="dot hidden" id="dotAll"></span></button>
-    <button class="tab hidden" data-tab="killers" id="killersTab">🔪 Δολοφόνοι<span class="dot hidden" id="dotKillers"></span></button>
+    <button class="tab on" data-tab="role">Ρόλος</button>
+    <button class="tab" data-tab="all">Όλοι<span class="dot hidden" id="dotAll"></span></button>
+    <button class="tab" data-tab="dm">Ιδιωτικά<span class="dot hidden" id="dotDm"></span></button>
+    <button class="tab hidden" data-tab="killers" id="killersTab">🔪<span class="dot hidden" id="dotKillers"></span></button>
   </div>
 
   <div class="pane" data-pane="role" style="overflow-y:auto">
@@ -211,6 +225,21 @@
       <input maxlength="300" placeholder="Γράψε σε όλους…">
       <button type="submit">Στείλε</button>
     </form>
+  </div>
+
+  <div class="pane hidden" data-pane="dm">
+    <div id="dmList" class="dmlist"></div>
+    <div id="dmThread" class="dmthread hidden">
+      <div class="dmhead">
+        <button class="ghost small" id="dmBack" type="button">← Πίσω</button>
+        <span>Με <b id="dmWith"></b></span>
+      </div>
+      <div class="chatbox" id="dmBox"></div>
+      <form class="send" id="dmForm" autocomplete="off">
+        <input maxlength="300" placeholder="Ιδιωτικό μήνυμα…">
+        <button type="submit">Στείλε</button>
+      </form>
+    </div>
   </div>
 
   <div class="pane hidden" data-pane="killers">
@@ -358,7 +387,7 @@ const pid = TEST ? "test-" + TEST : loadPid();
 if (TEST) {
   const b = document.createElement("div");
   b.textContent = "🧪 Λειτουργία δοκιμής · παίκτης " + TEST;
-  b.style.cssText = "position:fixed;bottom:8px;left:8px;z-index:9;background:#d9b46a;color:#1a1208;font:600 12px Inter,sans-serif;padding:5px 10px;border-radius:8px;opacity:.9;pointer-events:none";
+  b.style.cssText = "position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9;background:#d9b46a;color:#1a1208;font:600 11px Inter,sans-serif;padding:2px 10px;border-radius:0 0 8px 8px;opacity:.9;pointer-events:none";
   document.body.appendChild(b);
   document.title = "🧪" + TEST + " · " + document.title;
 }
@@ -494,10 +523,12 @@ function showGame(roleId){
     roleOpen = false; applyRoleOpen();
     startChat("all", $("chatAll"), "dotAll");
     if (isKiller) startChat("killers", $("chatKillers"), "dotKillers");
+    startDMs();
   } else if (isKiller && !chatSubs.killers) {
     startChat("killers", $("chatKillers"), "dotKillers");
   }
 
+  if (tab === "dm" && !dmOpen) renderDMList();
   renderHost($("hostGame"));
 }
 
@@ -538,12 +569,122 @@ function setTab(t){
   document.querySelectorAll(".pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t));
   if (t === "all") { $("dotAll").classList.add("hidden"); scrollBottom($("chatAll")); }
   if (t === "killers") { $("dotKillers").classList.add("hidden"); scrollBottom($("chatKillers")); }
+  if (t === "dm") {
+    if (dmOpen && dm[dmOpen]) { dm[dmOpen].unread = 0; scrollBottom($("dmBox")); }
+    renderDMList(); updateDmDot();
+  }
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
 // ---- Chat ----
 const scrollBottom = el => { el.scrollTop = el.scrollHeight; };
 function chatPath(key){ return "chat/" + (game && game.round || 0) + "/" + key; }
+
+function makeBubble(m){
+  const b = document.createElement("div");
+  b.className = "bubble" + (m.pid === pid ? " mine" : "");
+  const n = document.createElement("div"); n.className = "n"; n.textContent = m.name || "—";
+  const tm = document.createElement("span"); tm.className = "tm";
+  if (typeof m.ts === "number") tm.textContent = new Date(m.ts).toLocaleTimeString("el-GR", { hour:"2-digit", minute:"2-digit" });
+  n.appendChild(tm);
+  const tx = document.createElement("div"); tx.className = "tx"; tx.textContent = m.text || "";
+  b.append(n, tx);
+  return b;
+}
+
+// ---- Ιδιωτικές συνομιλίες (ένας-προς-έναν) ----
+let dm = {};          // otherPid -> { msgs: [], unread: 0 }
+let dmOpen = null;    // otherPid of the open conversation
+const pairKey = o => [pid, o].sort().join("__");
+const dmPath = o => "chat/" + (game && game.round || 0) + "/dm/" + pairKey(o);
+const dmPlayers = () => Object.keys((game && game.roles) || {}).filter(id => id !== pid)
+  .sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
+
+function startDMs(){
+  dm = {}; dmOpen = null;
+  $("dmThread").classList.add("hidden"); $("dmList").classList.remove("hidden");
+  dmPlayers().forEach(o => {
+    dm[o] = { msgs: [], unread: 0 };
+    chatSubs["dm:" + o] = onChildAdded(query(R(dmPath(o)), limitToLast(300)), snap => {
+      const m = snap.val(); if (!m || !dm[o]) return;
+      dm[o].msgs.push(m);
+      if (dmOpen === o && tab === "dm") {
+        const box = $("dmBox");
+        const empty = box.querySelector(".chatempty"); if (empty) empty.remove();
+        const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+        box.appendChild(makeBubble(m));
+        if (nearBottom || m.pid === pid) scrollBottom(box);
+      } else if (m.pid !== pid) {
+        dm[o].unread++;
+      }
+      renderDMList(); updateDmDot();
+    });
+  });
+  renderDMList(); updateDmDot();
+}
+
+function updateDmDot(){
+  const any = Object.values(dm).some(d => d.unread > 0);
+  $("dotDm").classList.toggle("hidden", !any);
+}
+
+function renderDMList(){
+  const list = $("dmList"); list.textContent = "";
+  const note = document.createElement("div"); note.className = "dmnote";
+  note.textContent = "Κάθε συνομιλία τη βλέπετε μόνο εσείς οι δύο.";
+  list.appendChild(note);
+  const ids = Object.keys(dm);
+  const last = id => { const a = dm[id].msgs; return a.length && typeof a[a.length - 1].ts === "number" ? a[a.length - 1].ts : 0; };
+  ids.sort((a, b) => last(b) - last(a) || ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
+  ids.forEach(o => {
+    const row = document.createElement("button"); row.type = "button"; row.className = "dmrow";
+    const nm = nameOf(o);
+    const av = document.createElement("span"); av.className = "av"; av.textContent = (nm[0] || "?").toUpperCase();
+    const mid = document.createElement("span"); mid.className = "mid";
+    const n = document.createElement("div"); n.className = "nm"; n.textContent = nm;
+    const pv = document.createElement("div"); pv.className = "pv";
+    const lm = dm[o].msgs[dm[o].msgs.length - 1];
+    pv.textContent = lm ? (lm.pid === pid ? "Εσύ: " : "") + lm.text : "Ξεκίνα ιδιωτική συνομιλία";
+    mid.append(n, pv);
+    row.append(av, mid);
+    if (dm[o].unread) { const c = document.createElement("span"); c.className = "cnt"; c.textContent = dm[o].unread; row.appendChild(c); }
+    row.onclick = () => openDM(o);
+    list.appendChild(row);
+  });
+}
+
+function openDM(o){
+  dmOpen = o;
+  dm[o].unread = 0;
+  $("dmWith").textContent = nameOf(o);
+  $("dmList").classList.add("hidden");
+  $("dmThread").classList.remove("hidden");
+  const box = $("dmBox"); box.textContent = "";
+  if (!dm[o].msgs.length) {
+    const e = document.createElement("div"); e.className = "chatempty";
+    e.textContent = "Μόνο εσύ και " + nameOf(o) + " βλέπετε αυτά τα μηνύματα.";
+    box.appendChild(e);
+  }
+  dm[o].msgs.forEach(m => box.appendChild(makeBubble(m)));
+  scrollBottom(box);
+  updateDmDot();
+  $("dmForm").querySelector("input").focus();
+}
+$("dmBack").onclick = () => {
+  dmOpen = null;
+  $("dmThread").classList.add("hidden");
+  $("dmList").classList.remove("hidden");
+  renderDMList();
+};
+$("dmForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const input = $("dmForm").querySelector("input");
+  const text = input.value.trim();
+  if (!text || !dmOpen || !myRoleId()) return;
+  push(R(dmPath(dmOpen)), { pid, name: nameOf(pid), text, ts: serverTimestamp() });
+  input.value = "";
+  input.focus();
+});
 
 function startChat(key, box, dotId){
   box.textContent = "";
@@ -555,14 +696,7 @@ function startChat(key, box, dotId){
     const m = snap.val(); if (!m) return;
     if (empty.parentNode) empty.remove();
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-    const b = document.createElement("div");
-    b.className = "bubble" + (m.pid === pid ? " mine" : "");
-    const n = document.createElement("div"); n.className = "n"; n.textContent = m.name || "—";
-    const tm = document.createElement("span"); tm.className = "tm";
-    if (typeof m.ts === "number") tm.textContent = new Date(m.ts).toLocaleTimeString("el-GR", { hour:"2-digit", minute:"2-digit" });
-    n.appendChild(tm);
-    const tx = document.createElement("div"); tx.className = "tx"; tx.textContent = m.text || "";
-    b.append(n, tx); box.appendChild(b);
+    box.appendChild(makeBubble(m));
     if (nearBottom || m.pid === pid) scrollBottom(box);
     if (tab !== key && m.pid !== pid) $(dotId).classList.remove("hidden");
   });
@@ -572,7 +706,7 @@ function stopChats(){
   chatSubs = {}; chatRound = null;
 }
 
-document.querySelectorAll("form.send").forEach(f => {
+document.querySelectorAll("form.send[data-chat]").forEach(f => {
   f.addEventListener("submit", e => {
     e.preventDefault();
     const input = f.querySelector("input");
