@@ -93,6 +93,9 @@
   .note{color:var(--muted);font-size:14px;line-height:1.5}
   .note:empty,.phasecard .note:empty{display:none}
   .center{text-align:center}
+  #codeInput::placeholder{text-transform:none;letter-spacing:normal;font-weight:400}
+  .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .roomcode{font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
   ul{list-style:none;margin:0;padding:0}
   .players li{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
@@ -345,6 +348,24 @@
   <p class="note center" id="loadingMsg">Σύνδεση…</p>
 </div>
 
+<!-- Αρχική: φτιάξε ή μπες σε τραπέζι -->
+<div class="wrap hidden" id="home">
+  <header><div class="moon"></div><h1>PALERMO</h1><div class="sub">Βραδιά παιχνιδιού</div></header>
+  <div class="card">
+    <h2>Νέο τραπέζι</h2>
+    <p class="note">Γίνεσαι ο host και στέλνεις τον κωδικό στους φίλους σου.</p>
+    <button type="button" class="big" id="createBtn">Φτιάξε τραπέζι</button>
+  </div>
+  <div class="card">
+    <h2>Έχω κωδικό</h2>
+    <form id="codeForm" class="row" autocomplete="off">
+      <input id="codeInput" maxlength="4" placeholder="π.χ. KQ7M" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:.2em;font-weight:600">
+      <button type="submit" id="codeBtn">Μπαίνω</button>
+    </form>
+    <div class="msg" id="homeMsg"></div>
+  </div>
+</div>
+
 <!-- Join + lobby -->
 <div class="wrap hidden" id="lobby">
   <div class="lobbytop">
@@ -352,6 +373,17 @@
     <button type="button" class="iconbtn" id="setBtnLobby" aria-label="Ρυθμίσεις">⚙️</button>
   </div>
   <header><div class="moon"></div><h1>PALERMO</h1><div class="sub">Βραδιά παιχνιδιού</div></header>
+
+  <div class="card roomcard">
+    <div>
+      <div class="note" style="margin:0">Κωδικός τραπεζιού</div>
+      <div class="roomcode" id="roomCode"></div>
+    </div>
+    <div class="avbtns">
+      <button type="button" class="ghost small" id="shareBtn">Στείλε</button>
+      <button type="button" class="ghost small" id="otherRoomBtn">Άλλο τραπέζι</button>
+    </div>
+  </div>
 
   <div class="card" id="joinCard">
     <h2>Μπες στο τραπέζι</h2>
@@ -572,7 +604,7 @@ const firebaseConfig = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getDatabase, ref, onValue, set, push, remove, update, query,
-  limitToLast, onChildAdded, runTransaction, serverTimestamp, onDisconnect
+  limitToLast, onChildAdded, runTransaction, serverTimestamp, onDisconnect, get
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const $ = id => document.getElementById(id);
@@ -717,7 +749,79 @@ if (TEST) {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const R = path => ref(db, "palermo/" + path);
+
+// ---- Τραπέζι (δωμάτιο) με κωδικό ----
+const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const cleanCode = c => (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+const roomRef = (code, path) => ref(db, "palermo/rooms/" + code + (path ? "/" + path : ""));
+function goRoom(code){
+  const q = new URLSearchParams(location.search); q.set("t", code);
+  location.href = location.pathname + "?" + q.toString();
+}
+function goHome(){
+  try { localStorage.removeItem("palermo.room"); } catch (e) {}
+  const q = new URLSearchParams(location.search); q.delete("t");
+  const qs = q.toString(); location.href = location.pathname + (qs ? "?" + qs : "");
+}
+let ROOM = cleanCode(new URLSearchParams(location.search).get("t"));
+if (!ROOM && !TEST) { try { ROOM = cleanCode(localStorage.getItem("palermo.room")); } catch (e) {} }
+if (!ROOM && TEST) ROOM = "TEST";
+if (ROOM && ROOM.length !== 4) ROOM = "";
+
+if (!ROOM) {
+  // Αρχική σελίδα: φτιάξε ή μπες σε τραπέζι
+  $("loading").classList.add("hidden");
+  $("home").classList.remove("hidden");
+  const msg = t => { $("homeMsg").textContent = t; };
+  $("createBtn").onclick = async () => {
+    $("createBtn").disabled = true;
+    try {
+      for (let i = 0; i < 8; i++) {
+        let c = ""; for (let k = 0; k < 4; k++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+        const ex = await get(roomRef(c, "meta"));
+        if (ex.exists()) continue;
+        await set(roomRef(c, "meta"), { ts: serverTimestamp(), by: pid });
+        await set(roomRef(c, "hostPid"), pid);
+        goRoom(c); return;
+      }
+      msg("Κάτι πήγε στραβά. Δοκίμασε ξανά.");
+    } catch (e) { msg("Δεν υπάρχει σύνδεση. Δοκίμασε ξανά."); }
+    $("createBtn").disabled = false;
+  };
+  $("codeInput").addEventListener("input", () => { $("codeInput").value = cleanCode($("codeInput").value); msg(""); });
+  $("codeForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const c = cleanCode($("codeInput").value);
+    if (c.length !== 4) { msg("Ο κωδικός έχει 4 χαρακτήρες."); return; }
+    $("codeBtn").disabled = true;
+    try {
+      const ex = await get(roomRef(c, "meta"));
+      if (!ex.exists()) { msg("Δεν βρέθηκε τραπέζι με κωδικό " + c + "."); $("codeBtn").disabled = false; return; }
+      goRoom(c); return;
+    } catch (e) { msg("Δεν υπάρχει σύνδεση. Δοκίμασε ξανά."); }
+    $("codeBtn").disabled = false;
+  });
+  await new Promise(() => {});   // σταματάμε εδώ μέχρι να διαλέξει τραπέζι
+}
+
+if (!TEST) { try { localStorage.setItem("palermo.room", ROOM); } catch (e) {} }
+{ const q = new URLSearchParams(location.search); if (q.get("t") !== ROOM) { q.set("t", ROOM); history.replaceState(null, "", location.pathname + "?" + q.toString()); } }
+const R = path => roomRef(ROOM, path);
+const ROOM_LINK = () => location.origin + location.pathname + "?t=" + ROOM;
+$("roomCode").textContent = ROOM;
+$("shareBtn").onclick = async () => {
+  const text = "Έλα να παίξουμε Παλέρμο! Κωδικός τραπεζιού: " + ROOM;
+  try {
+    if (navigator.share) { await navigator.share({ title: "Palermo", text, url: ROOM_LINK() }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(text + "\n" + ROOM_LINK()); $("shareBtn").textContent = "Αντιγράφηκε ✓"; setTimeout(() => { $("shareBtn").textContent = "Στείλε"; }, 1800); } catch (e) {}
+};
+$("otherRoomBtn").onclick = async () => {
+  if (players[pid] && !(game && game.status === "playing")) { try { await remove(R("players/" + pid)); } catch (e) {} }
+  goHome();
+};
+// Καθάρισμα τραπεζιού (κρατάμε κωδικό και host)
+const wipeRoom = () => update(R(""), { players: null, game: null, act: null, chat: null, online: null, config: null });
 
 // ---- State ----
 let players = {};          // pid -> {name, ts}
@@ -1254,6 +1358,8 @@ function renderSheet(){
     gp.appendChild(sureBtn("advance", label, "Σίγουρα; Πάτα ξανά", () => tryResolve(true), "ghost big"));
   }
 
+  const rc = group(body, "Τραπέζι");
+  const rcl = mk("div", "roomcode", ROOM); rcl.style.fontSize = "26px"; rc.appendChild(rcl);
   const pg = group(body, "Παίκτες");
   const ids = playing ? Object.keys(g.roles || {}).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0)) : sortedPlayers().map(p => p.id);
   ids.forEach(id => {
@@ -1273,7 +1379,7 @@ function renderSheet(){
   const rg = group(body, "Παιχνίδι");
   const st = mk("div", "stack");
   if (playing) st.appendChild(sureBtn("round", "🔁 Νέος γύρος, ίδιοι παίκτες", "Σίγουρα; Νέοι ρόλοι για όλους", () => deal(true), "ghost big"));
-  st.appendChild(sureBtn("game", "🧹 Νέο παιχνίδι (καθάρισμα όλων)", "Σίγουρα; Σβήνουν όλοι οι παίκτες", () => set(ref(db, "palermo"), null), "ghost big"));
+  st.appendChild(sureBtn("game", "🧹 Νέο παιχνίδι (καθάρισμα όλων)", "Σίγουρα; Σβήνουν όλοι οι παίκτες", () => wipeRoom(), "ghost big"));
   rg.appendChild(st);
 }
 
@@ -1402,7 +1508,7 @@ function renderHost(container){
   act("yes").onclick = async () => {
     const what = pendingConfirm; pendingConfirm = null;
     if (what === "round") await deal(true);
-    if (what === "game") await set(ref(db, "palermo"), null);
+    if (what === "game") await wipeRoom();
     render();
   };
 }
@@ -1656,7 +1762,7 @@ let votePick = null, votePickDay = null;   // ψήφος που περιμένε
 let prevRapeKey = null;
 let prevPk = null, prevHistLen = null, rapistDismissedRound = null;
 const deathSeen = new Set();
-const deathKey = () => `palermo.deadseen.${pid}.${game && game.round}`;
+const deathKey = () => `palermo.deadseen.${ROOM}.${pid}.${game && game.round}`;
 function isDeathSeen(){
   if (deathSeen.has(deathKey())) return true;
   try { return localStorage.getItem(deathKey()) === "1"; } catch (e) { return false; }
