@@ -115,6 +115,9 @@
   .gright{display:flex;align-items:center;gap:8px}
   .lobbytop{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;display:flex;gap:8px}
   #lobby{position:relative}
+  .photoopt{display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px 0;margin-top:12px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;text-align:left;width:auto}
+  .photoopt:hover{background:none;color:var(--text)}
+  .photoopt .note{margin:0}
   .avrow{display:flex;align-items:center;gap:14px;margin-bottom:14px}
   .avbtns{display:flex;flex-wrap:wrap;gap:8px}
   .sheetwrap{position:fixed;inset:0;background:rgba(6,8,18,.7);z-index:18;display:flex;align-items:flex-end;justify-content:center;animation:mfade .2s ease}
@@ -381,28 +384,22 @@
 
   <div class="card" id="joinCard">
     <h2>Μπες στο τραπέζι</h2>
-    <div class="avrow">
-      <span class="av lg" id="avPreview" data-photo="cam" style="cursor:pointer" role="button" aria-label="Τράβηξε selfie">📷</span>
-      <div class="avbtns">
-        <button type="button" class="ghost small" data-photo="cam">📸 Selfie</button>
-        <button type="button" class="ghost small" data-photo="lib">🖼️ Συλλογή</button>
-      </div>
-    </div>
     <form id="joinForm" class="row" autocomplete="off">
       <input id="nameInput" maxlength="20" placeholder="Το username σου">
       <button type="submit" id="joinBtn">Μπαίνω</button>
     </form>
+    <button type="button" class="photoopt" data-photo="lib">
+      <span class="av" id="avPreview">📷</span>
+      <span><span id="avPickText">Πρόσθεσε φωτογραφία</span> <span class="note">(προαιρετικό)</span></span>
+    </button>
     <div class="msg" id="joinMsg"></div>
   </div>
 
   <div class="card hidden" id="waitCard">
-    <div class="avrow">
+    <button type="button" class="photoopt" data-photo="lib" style="margin:0 0 12px">
       <span class="av lg" id="avMine"></span>
-      <div class="avbtns">
-        <button type="button" class="ghost small" data-photo="cam">📸 Selfie</button>
-        <button type="button" class="ghost small" data-photo="lib">🖼️ Συλλογή</button>
-      </div>
-    </div>
+      <span class="note">Άλλαξε φωτογραφία</span>
+    </button>
     <h2>Είσαι μέσα, <span id="myName"></span></h2>
     <p class="note" id="waitNote">Περιμένουμε να μπουν όλοι. Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.</p>
     <button class="ghost small" id="leaveBtn">Αποχώρηση</button>
@@ -1282,7 +1279,7 @@ async function onPhotoPicked(input){
   try {
     const url = await shrinkPhoto(f);
     if (players[pid]) { await update(R("players/" + pid), { photo: url }); }
-    else { pendingPhoto = url; showPreview($("avPreview"), url); }
+    else { pendingPhoto = url; showPreview($("avPreview"), url); $("avPickText").textContent = "Άλλαξε φωτογραφία"; }
   } catch (e) { $("joinMsg").textContent = "Δεν μπόρεσα να διαβάσω τη φωτογραφία. Δοκίμασε άλλη."; }
 }
 $("photoInput").addEventListener("change", () => onPhotoPicked($("photoInput")));
