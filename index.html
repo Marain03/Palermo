@@ -117,6 +117,9 @@
   .partner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#1d1218;font-size:14px}
   .partner b{color:var(--red2)}
   .dead .pname{text-decoration:line-through;color:var(--muted)}
+  .odot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a4250;margin-left:8px;vertical-align:middle}
+  .odot.on{background:#3fbf6a;box-shadow:0 0 6px #3fbf6a88}
+  .turnbanner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#3a1720;border:1px solid var(--red2);font-weight:600;text-align:center}
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
   .hblock{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#120f16}
   .hblock.night{border-color:#2b3456;background:#10121c}
@@ -353,7 +356,7 @@ const firebaseConfig = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getDatabase, ref, onValue, set, push, remove, update, query,
-  limitToLast, onChildAdded, runTransaction, serverTimestamp
+  limitToLast, onChildAdded, runTransaction, serverTimestamp, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const $ = id => document.getElementById(id);
@@ -503,6 +506,47 @@ onValue(R("players"), snap => { players = snap.val() || {}; gotPlayers = true; r
 onValue(R("game"), snap => { game = snap.val(); gotGame = true; render(); },
   err => { $("loadingMsg").textContent = "Σφάλμα βάσης: " + err.message; });
 
+// ---- 🟢 Ποιος είναι συνδεδεμένος ----
+let online = {};
+onValue(R("online"), snap => { online = snap.val() || {}; if (gotPlayers && gotGame) render(); }, () => {});
+onValue(ref(db, ".info/connected"), snap => {
+  if (snap.val() !== true) return;
+  const me = R("online/" + pid);
+  try { onDisconnect(me).remove(); } catch (e) {}
+  set(me, true).catch(() => {});
+}, () => {});
+function onlineDot(id){
+  const d = document.createElement("span");
+  const on = !!online[id] || id.startsWith("bot-");
+  d.className = "odot" + (on ? " on" : "");
+  d.title = on ? "Συνδεδεμένος" : "Εκτός σύνδεσης";
+  return d;
+}
+
+// ---- 📱 Η οθόνη να μη σβήνει ----
+let wakeLock = null;
+async function keepAwake(){
+  try { if ("wakeLock" in navigator && !wakeLock && document.visibilityState === "visible") {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } } catch (e) {}
+}
+document.addEventListener("click", keepAwake, { once: false, passive: true });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
+
+// ---- 🔔 «Σειρά σου!» ----
+let wasMyTurn = false, titleTimer = null;
+const baseTitle = document.title;
+function stopTitleFlash(){ if (titleTimer) { clearInterval(titleTimer); titleTimer = null; } document.title = baseTitle; }
+function alertMyTurn(){
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+  stopTitleFlash();
+  let on = false;
+  titleTimer = setInterval(() => { on = !on; document.title = on ? "🔔 Σειρά σου!" : baseTitle; }, 900);
+  setTimeout(stopTitleFlash, 20000);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(stopTitleFlash, 3000); });
+
 // ---- Helpers ----
 const sortedPlayers = () => Object.entries(players)
   .map(([id, p]) => ({ id, name: p.name, ts: p.ts || 0 }))
@@ -565,6 +609,7 @@ function showLobby(){
     const li = document.createElement("li");
     const n = document.createElement("span"); n.className = "num"; n.textContent = i + 1;
     const name = document.createElement("span"); name.className = "pname"; name.textContent = p.name;
+    name.appendChild(onlineDot(p.id));
     if (p.id === pid) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
     if (i === 0) { const h = document.createElement("span"); h.className = "badge"; h.style.marginLeft = "8px"; h.textContent = "HOST"; name.appendChild(h); }
     li.append(n, name);
@@ -636,6 +681,7 @@ function showGame(roleId){
     stopChats();
     chatRound = game.round;
     roleOpen = false; applyRoleOpen();
+    if (chatRound !== null || tab !== "flow") setTab("flow");
     startChat("all", $("chatAll"), "dotAll");
     if (seesKillers) startChat("killers", $("chatKillers"), "dotKillers");
     startDMs();
@@ -1325,6 +1371,34 @@ function renderFlow(){
     aNote.textContent = amHost() ? "Πάτα «Νέος γύρος» από κάτω για να ξαναπαίξετε." : "Ο host μπορεί να ξεκινήσει νέο γύρο.";
   }
 
+  // 🔔 Είναι η σειρά μου;
+  let myTurn = false;
+  if (!dead) {
+    if (g.phase === "night") {
+      const st2 = nightStatus(g, A);
+      if (myRole === "rapist" && st2.rapistPending) myTurn = true;
+      else if (KILLERS.includes(myRole) && st2.killersTurn && !st2.target && !(A.kill || {})[me]) myTurn = true;
+      else if (myRole === "doctor" && st2.docTurn && !st2.saves[me]) myTurn = true;
+    } else if (g.phase === "day") {
+      myTurn = !(A.vote || {})[me];
+    } else if (g.phase === "kamikaze") {
+      myTurn = me === g.kami && !(A.kami || {})[me];
+    }
+  }
+  if (myTurn && !wasMyTurn) {
+    alertMyTurn();
+    if (tab !== "flow") $("dotFlow").classList.remove("hidden");
+  }
+  if (!myTurn && wasMyTurn) stopTitleFlash();
+  wasMyTurn = myTurn;
+  if (myTurn) {
+    const t = document.createElement("div"); t.className = "turnbanner"; t.textContent = "🔔 Σειρά σου!";
+    box.prepend(t);
+  }
+
+  // Host: ποιοι είναι εκτός σύνδεσης
+  const offline = al.filter(id => !online[id] && !id.startsWith("bot-"));
+
   const hf = $("hostFlow"); hf.textContent = "";
 
   // Καμικάζι: κουμπί αυτοκτονίας
@@ -1359,7 +1433,8 @@ function renderFlow(){
   if (amHost() && g.phase !== "ended") {
     const c = document.createElement("div"); c.className = "card host";
     const n = document.createElement("p"); n.className = "note"; n.style.margin = "0 0 10px";
-    n.textContent = "Host: αν κάποιος αργεί ή λείπει, μπορείς να προχωρήσεις τη φάση με όσες κινήσεις/ψήφους έχουν γίνει.";
+    n.textContent = "Host: αν κάποιος αργεί ή λείπει, μπορείς να προχωρήσεις τη φάση με όσες κινήσεις/ψήφους έχουν γίνει."
+      + (offline.length ? " ⚠️ Εκτός σύνδεσης τώρα: " + offline.map(nameOf).join(", ") + "." : "");
     const b = document.createElement("button"); b.className = "ghost big"; b.type = "button";
     b.textContent = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? "⏭ Κλείσε την ψηφοφορία" : "⏭ Προχώρα";
     b.onclick = () => { if (b.dataset.sure) { tryResolve(true); } else { b.dataset.sure = "1"; b.textContent = "Σίγουρα; Πάτα ξανά"; } };
@@ -1373,6 +1448,7 @@ function renderFlow(){
     const li = document.createElement("li"); if (deadIn(g, id)) li.className = "dead";
     const num = document.createElement("span"); num.className = "num"; num.textContent = deadIn(g, id) ? "☠️" : i + 1;
     const name = document.createElement("span"); name.className = "pname"; name.textContent = nameOf(id);
+    if (!deadIn(g, id)) name.appendChild(onlineDot(id));
     if (id === me) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
     li.append(num, name); ul.appendChild(li);
   });
