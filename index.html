@@ -5,173 +5,254 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title>Palermo · Βραδιά παιχνιδιού</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800&family=Noto+Serif:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=GFS+Didot&family=Commissioner:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ============================================================
+     Palermo · Νύχτα (μελανί, φως φαναριού) / Μέρα (ηλιόλουστη πέτρα, θάλασσα)
+     ============================================================ */
   :root{
-    --bg:#0d0b10; --panel:#17131c; --panel2:#201a27; --line:#2e2636;
-    --text:#f3ece4; --muted:#a59aa8; --red:#c2253a; --red2:#e0405a; --gold:#d9b46a;
+    --bg:#0F1528; --bg2:#131A31; --panel:#18213F; --raise:#202B50; --line:#2B3762;
+    --text:#EFE8DA; --muted:#98A1BE; --field:#0C1122;
+    --head:#EBB64B;            /* τίτλοι */
+    --accent:#EBB64B; --accent-ink:#241803; --accent-hover:#F3C766;
+    --wine:#C2414F; --wine-soft:#3A1D30; --ok:#6FB07A;
+    --paper:#F4EBD8; --paper-ink:#2A2016; --paper-line:#D8C6A2; --paper-wine:#7E1F2C;
+    --serif:"GFS Didot", "Noto Serif", Georgia, serif;
+    --sans:Commissioner, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --r:14px;
+  }
+  body.is-day{
+    --bg:#E9D9BC; --bg2:#E2CFAE; --panel:#F5ECDB; --raise:#FCF6EA; --line:#D3BE98;
+    --text:#2A2016; --muted:#76664F; --field:#FFFBF3;
+    --head:#1E5B86;
+    --accent:#1E5B86; --accent-ink:#FFFFFF; --accent-hover:#25709F;
+    --wine:#A3283A; --wine-soft:#F2DAD6; --ok:#3D8A4B;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
-  body{
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;transition:background-color 1.2s ease,color .6s ease}
+  /* Ουρανός: αστέρια τη νύχτα, ήλιος τη μέρα (ήπιο crossfade) */
+  body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;transition:opacity 1.4s ease}
+  body::before{
     background:
-      radial-gradient(900px 500px at 50% -10%, rgba(194,37,58,.22), transparent 60%),
-      radial-gradient(600px 400px at 100% 100%, rgba(217,180,106,.07), transparent 60%),
-      var(--bg);
-  }
-  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 40px}
-  header{text-align:center;margin-bottom:18px}
-  .moon{width:40px;height:40px;margin:0 auto 8px;border-radius:50%;
-    box-shadow:inset -11px -4px 0 0 var(--gold);transform:rotate(-20deg);opacity:.9}
-  h1{font-family:Cinzel,serif;font-weight:800;letter-spacing:.14em;font-size:30px;margin:0}
-  .sub{color:var(--muted);font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
-  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
-    border-radius:18px;padding:18px;margin-bottom:14px}
-  h2{font-family:"Noto Serif",serif;font-size:18px;margin:0 0 12px}
+      radial-gradient(1.2px 1.2px at 12% 18%, #ffffffaa, transparent 60%),
+      radial-gradient(1px 1px at 28% 8%, #ffffff88, transparent 60%),
+      radial-gradient(1.4px 1.4px at 46% 22%, #ffffffaa, transparent 60%),
+      radial-gradient(1px 1px at 63% 12%, #ffffff77, transparent 60%),
+      radial-gradient(1.2px 1.2px at 80% 26%, #ffffff99, transparent 60%),
+      radial-gradient(1px 1px at 90% 6%, #ffffff77, transparent 60%),
+      radial-gradient(1px 1px at 8% 40%, #ffffff55, transparent 60%),
+      radial-gradient(1px 1px at 72% 44%, #ffffff55, transparent 60%),
+      radial-gradient(600px 380px at 85% -6%, rgba(235,182,75,.13), transparent 70%),
+      linear-gradient(180deg, #121A33 0%, var(--bg) 55%);
+    opacity:1}
+  body::after{
+    background:
+      radial-gradient(520px 360px at 12% -8%, rgba(255,214,140,.55), transparent 70%),
+      linear-gradient(180deg, #EFE2C8 0%, var(--bg) 60%);
+    opacity:0}
+  body.is-day::before{opacity:0}
+  body.is-day::after{opacity:1}
+  @media (prefers-reduced-motion: reduce){ *,body::before,body::after{transition:none!important;animation:none!important} }
+
+  .wrap{max-width:540px;margin:0 auto;padding:28px 18px 48px}
+  header{text-align:center;margin-bottom:22px}
+  .moon{width:38px;height:38px;margin:0 auto 10px;border-radius:50%;
+    box-shadow:inset -10px -3px 0 0 var(--head);transform:rotate(-20deg)}
+  h1{font-family:var(--serif);font-weight:400;letter-spacing:.18em;font-size:34px;margin:0;color:var(--text)}
+  .sub{color:var(--muted);font-size:14px;margin-top:6px;font-style:italic;font-family:var(--serif)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+  h2{font-family:var(--serif);font-weight:400;font-size:22px;margin:0 0 10px;color:var(--head)}
   .row{display:flex;gap:10px}
-  input{flex:1;min-width:0;background:#0f0c13;border:1px solid var(--line);color:var(--text);
-    border-radius:12px;padding:13px;font-size:16px;font-family:inherit;outline:none}
-  input:focus{border-color:var(--red)}
+  input{flex:1;min-width:0;background:var(--field);border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:13px 14px;font-size:16px;font-family:inherit;outline:none}
+  input::placeholder{color:var(--muted)}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent)}
   button{font-family:inherit;font-size:15px;font-weight:600;border:0;border-radius:12px;
-    padding:13px 18px;cursor:pointer;color:#fff;background:var(--red);transition:transform .08s,background .2s}
-  button:hover{background:var(--red2)}
-  button:active{transform:scale(.97)}
-  button:disabled{opacity:.35;cursor:not-allowed}
+    padding:13px 18px;cursor:pointer;color:var(--accent-ink);background:var(--accent);transition:transform .08s,background-color .2s}
+  button:hover{background:var(--accent-hover)}
+  button:active{transform:scale(.98)}
+  button:focus-visible,.choice:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button:disabled{opacity:.4;cursor:not-allowed}
   button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
-  button.big{width:100%;padding:16px;font-size:16px}
+  button.ghost:hover{background:var(--raise)}
+  button.big{width:100%;padding:15px;font-size:16px}
   button.small{padding:8px 12px;font-size:13px}
-  .msg{color:var(--red2);font-size:14px;min-height:18px;margin-top:8px}
-  .note{color:var(--muted);font-size:13px;line-height:1.5}
+  .msg{color:var(--wine);font-size:14px;min-height:18px;margin-top:8px}
+  .note{color:var(--muted);font-size:14px;line-height:1.5}
   .center{text-align:center}
   .hidden{display:none!important}
   ul{list-style:none;margin:0;padding:0}
-  .players li{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .players li{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
   .players li:last-child{border-bottom:0}
-  .num{width:28px;height:28px;border-radius:50%;background:#0f0c13;border:1px solid var(--line);
+  .num{width:28px;height:28px;border-radius:50%;background:var(--raise);
     display:grid;place-items:center;font-size:12px;color:var(--muted);flex:none}
   .pname{flex:1;font-size:16px;overflow:hidden;text-overflow:ellipsis}
-  .me{color:var(--gold);font-size:12px;margin-left:6px}
+  .me{color:var(--muted);font-size:13px;margin-left:6px}
   .x{background:none;color:var(--muted);padding:6px 10px;font-size:18px}
-  .x:hover{background:none;color:var(--red2)}
-  .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;margin-bottom:8px}
-  .badge{display:inline-block;background:var(--gold);color:#1a1208;font-size:11px;font-weight:700;
-    border-radius:8px;padding:2px 7px;letter-spacing:.05em}
+  .x:hover{background:none;color:var(--wine)}
+  .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;margin-bottom:8px}
+  .badge{display:inline-block;background:var(--head);color:var(--bg);font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px}
 
-  /* Game screen */
+  /* ---------- Οθόνη παιχνιδιού ---------- */
   #game{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
-  .gtop{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
-  .gtop .t{font-family:Cinzel,serif;letter-spacing:.12em;font-size:18px}
-  .gtop .who{color:var(--muted);font-size:13px}
-  .tabs{display:flex;gap:6px;padding:0 12px 10px}
-  .tab{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:10px 4px;font-size:13px;position:relative;min-width:0}
-  .tab[data-tab="killers"]{flex:0 0 44px}
-  .tab:hover{background:var(--panel2)}
-  .tab.on{background:var(--panel2);color:var(--text);border-color:var(--red)}
-  .tab .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red2)}
-  .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 12px 12px}
-  .rolecard{border-radius:20px;padding:34px 18px;text-align:center;cursor:pointer;user-select:none;
-    background:radial-gradient(circle at 50% 0%, rgba(194,37,58,.35), transparent 70%),#0f0c13;
-    border:1px solid var(--red)}
-  .rolecard.closed{border-style:dashed;border-color:var(--line);background:#0f0c13}
-  .rolelabel{color:var(--muted);font-size:12px;letter-spacing:.22em;text-transform:uppercase}
-  .rolename{font-family:"Noto Serif",serif;font-size:34px;font-weight:800;color:var(--gold);margin-top:10px}
-  .intel{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:15px;line-height:1.6}
+  .gtop{display:flex;align-items:baseline;justify-content:space-between;padding:14px 18px 10px}
+  .gtop .t{font-family:var(--serif);letter-spacing:.16em;font-size:20px}
+  .gtop .who{color:var(--muted);font-size:14px}
+  .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 14px 14px}
+  /* Καρτέλες κάτω, σαν εφαρμογή */
+  .tabs{order:3;display:flex;gap:4px;padding:6px 8px calc(8px + env(safe-area-inset-bottom));
+    background:var(--bg2);border-top:1px solid var(--line)}
+  .tab{flex:1;min-width:0;background:none;border:0;color:var(--muted);padding:6px 2px 5px;border-radius:12px;
+    font-size:11.5px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+  .tab .ic{font-size:19px;line-height:1;filter:grayscale(.5);opacity:.85}
+  .tab:hover{background:var(--raise)}
+  .tab.on{color:var(--text);background:var(--raise)}
+  .tab.on .ic{filter:none;opacity:1}
+  .tab .dot{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--wine);box-shadow:0 0 0 2px var(--bg2)}
+
+  /* ---------- Το τραπουλόχαρτο του ρόλου ---------- */
+  .rolecard{position:relative;overflow:hidden;border-radius:18px;padding:40px 24px 70px;text-align:center;cursor:pointer;user-select:none;
+    background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);
+    box-shadow:0 14px 34px rgba(0,0,0,.35)}
+  .rolecard::before,.rolecard::after{content:"";position:absolute;width:74px;height:74px;pointer-events:none;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23F4EBD8'/%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%231E5B86'/%3E%3Ccircle cx='20' cy='20' r='3.2' fill='%23E0A526'/%3E%3Cpath d='M0 0h7L0 7zM40 0h-7l7 7zM0 40h7l-7-7zM40 40h-7l7-7z' fill='%23E0A526'/%3E%3C/svg%3E") 0 0/37px 37px;
+    opacity:.9}
+  .rolecard::before{top:0;left:0;border-bottom-right-radius:18px}
+  .rolecard::after{bottom:0;right:0;border-top-left-radius:18px}
+  /* Πίσω όψη (κρυμμένος ρόλος) */
+  .rolecard.closed{background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23ffffff14'/%3E%3C/svg%3E") 0 0/44px 44px,
+      #5E1824;
+    color:#F4EBD8;border-color:#7E2A37}
+  .rolecard.closed::before,.rolecard.closed::after{display:none}
+  .rolecard.closed{padding-bottom:30px}
+  .rolecard::before,.rolecard::after{width:60px;height:60px}
+  .rolecard.closed .rolelabel{color:#F4EBD8cc}
+  .rolecard.closed .rolename{color:#F4EBD8;font-size:28px}
+  /* τα περιεχόμενα των καρτελών να μη «ζουλιούνται» */
+  .pane[data-pane="flow"] > *, .pane[data-pane="role"] > *, .pane[data-pane="hist"] > *{flex-shrink:0}
+  .rolecard.closed .tapnote{color:#F4EBD8aa}
+  .rolelabel{color:#8A7A60;font-size:14px;font-family:var(--serif);font-style:italic}
+  .rolename{font-family:var(--serif);font-size:40px;line-height:1.1;font-weight:400;color:var(--paper-wine);margin-top:8px}
+  .intel{margin:22px auto 0;max-width:340px;padding-top:16px;border-top:1px solid var(--paper-line);font-size:15px;line-height:1.6}
   .intel:empty{display:none}
   .intel p{margin:0 0 6px}
-  .intel b{color:var(--red2)}
-  .team{display:inline-block;margin-top:8px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
-  .tapnote{color:var(--muted);font-size:13px;margin-top:14px}
-  .guide h3,.rulesBody h3{font-family:"Noto Serif",serif;font-size:15px;color:var(--gold);margin:16px 0 6px}
+  .intel b{color:var(--paper-wine)}
+  .team{display:inline-block;margin-top:10px;font-size:13px;color:#8A7A60}
+  .tapnote{color:#8A7A60;font-size:13px;margin-top:16px}
+  .guide{margin-top:16px}
+  .guide h3,.rulesBody h3{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head);margin:18px 0 6px}
   .guide h3:first-child{margin-top:0}
-  .guide p,.rulesBody p{margin:0 0 8px;font-size:15px;line-height:1.55}
+  .guide p,.rulesBody p{margin:0 0 8px;font-size:15px;line-height:1.6}
   .guide ul{margin:0;padding-left:20px;list-style:disc}
-  .guide li{font-size:15px;line-height:1.5;margin-bottom:6px}
+  .guide li{font-size:15px;line-height:1.55;margin-bottom:6px}
   .rules{margin-top:14px}
-  .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .rtog{background:#0f0c13;border:1px solid var(--line);color:var(--muted);padding:9px 8px;font-size:13px;font-weight:500}
-  .rtog:hover{background:#1a1520}
-  .rtog.on{border-color:var(--gold);color:var(--text);background:#211a12}
   .rules summary{cursor:pointer;font-weight:600;font-size:15px}
   .rulesBody{margin-top:8px}
+  .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .rtog{background:var(--field);border:1px solid var(--line);color:var(--muted);padding:10px 8px;font-size:14px;font-weight:500}
+  .rtog:hover{background:var(--raise)}
+  .rtog.on{border-color:var(--head);color:var(--text);background:var(--raise)}
 
+  /* ---------- Συνομιλίες ---------- */
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
-    border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
-  .chatbox.killers{border-color:rgba(194,37,58,.6);background:#160d12}
-  .spynote{margin-top:10px;padding:12px;border-radius:12px;background:#1d1620;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
-  .bubble{max-width:82%;padding:8px 12px;border-radius:14px;background:var(--panel2);align-self:flex-start;word-wrap:break-word}
-  .bubble.mine{align-self:flex-end;background:#3a1720}
-  .bubble .n{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:2px}
+    border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+  .chatbox.killers{border-color:color-mix(in srgb, var(--wine) 55%, var(--line));background:color-mix(in srgb, var(--wine-soft) 55%, var(--panel))}
+  .spynote{margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
+  .bubble{max-width:82%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--raise);align-self:flex-start;word-wrap:break-word}
+  .bubble.mine{align-self:flex-end;border-radius:14px 14px 4px 14px;background:color-mix(in srgb, var(--accent) 22%, var(--panel))}
+  .bubble .n{font-size:12px;font-weight:600;color:var(--head);margin-bottom:2px}
   .bubble .tm{font-size:10px;color:var(--muted);margin-left:8px;font-weight:400}
   .bubble .tx{font-size:15px;line-height:1.4;white-space:pre-wrap}
   .sys{align-self:center;color:var(--muted);font-size:12px;text-align:center}
   .send{display:flex;gap:8px;margin-top:10px}
-  .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px}
-  .phasecard{text-align:center;padding:16px}
-  .phTitle{font-family:"Noto Serif",serif;font-size:24px;font-weight:800;color:var(--gold);margin-bottom:4px}
-  .phasecard.night{background:linear-gradient(180deg,#141a2e,#10121c);border-color:#2b3456}
-  .phasecard.day{background:linear-gradient(180deg,#2b2214,#1a1510);border-color:#4f3f22}
-  .phasecard.ended{border-color:var(--gold)}
+  .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px;max-width:260px}
+
+  /* ---------- Φάση ---------- */
+  .phasecard{text-align:center;padding:18px 16px 16px;background:transparent;border:0}
+  .phTitle{font-family:var(--serif);font-size:30px;font-weight:400;color:var(--head);margin-bottom:4px}
+  .phasecard .note{font-size:14px}
   .choices{display:grid;gap:8px}
   .choice{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
-    background:#0f0c13;border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:12px;font-weight:500}
-  .choice:hover{background:#1a1520}
-  .choice.sel{border-color:var(--red2);background:#2a121a}
+    background:var(--field);border:1px solid var(--line);color:var(--text);padding:13px 14px;border-radius:12px;font-weight:500}
+  .choice:hover{background:var(--raise)}
+  .choice.sel{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 16%, var(--field));box-shadow:inset 3px 0 0 var(--accent)}
+  .choice:disabled{opacity:.45}
   .choice .tally{font-size:12px;color:var(--muted);text-align:right}
-  .choice .tally b{color:var(--gold);font-size:14px}
-  .partner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#1d1218;font-size:14px}
-  .partner b{color:var(--red2)}
+  .choice .tally b{color:var(--head);font-size:14px}
+  .partner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:var(--wine-soft);font-size:14px}
+  .partner b{color:var(--wine)}
   .dead .pname{text-decoration:line-through;color:var(--muted)}
-  .odot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a4250;margin-left:8px;vertical-align:middle}
-  .odot.on{background:#3fbf6a;box-shadow:0 0 6px #3fbf6a88}
-  .modalwrap{position:fixed;inset:0;background:rgba(5,4,7,.84);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20;animation:mfade .25s ease}
-  .modal{width:100%;max-width:430px;max-height:88vh;overflow:auto;background:linear-gradient(180deg,#241b2b,#16121b);border:1px solid #3a2f44;
-    border-radius:22px;padding:26px 20px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:mpop .3s ease}
+  .odot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-left:8px;vertical-align:middle}
+  .odot.on{background:var(--ok)}
+  .turnbanner{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-align:center;
+    animation:nudge 1.6s ease-in-out 2}
+  @keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.02)}}
+  .deadnote{padding:10px;border-radius:10px;background:var(--raise);color:var(--muted);font-size:13px;text-align:center;margin-top:10px}
+
+  /* ---------- Pop-ups ---------- */
+  .modalwrap{position:fixed;inset:0;background:rgba(6,8,18,.78);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20;animation:mfade .25s ease}
+  .modal{width:100%;max-width:420px;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:20px;padding:26px 20px 20px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:mpop .32s ease}
   @keyframes mfade{from{opacity:0}to{opacity:1}}
-  @keyframes mpop{from{transform:translateY(12px) scale(.96);opacity:0}to{transform:none;opacity:1}}
-  .modal .mi{font-size:50px;line-height:1}
-  .modal .mk{color:var(--muted);font-size:12px;letter-spacing:.22em;text-transform:uppercase;margin-top:12px}
-  .modal .mt{font-family:"Noto Serif",serif;font-size:28px;font-weight:800;color:var(--gold);margin:6px 0 4px}
+  @keyframes mpop{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+  .modal .mi{font-size:46px;line-height:1}
+  .modal .mk{color:var(--muted);font-size:14px;margin-top:12px;font-family:var(--serif);font-style:italic}
+  .modal .mt{font-family:var(--serif);font-size:32px;font-weight:400;color:var(--head);margin:6px 0 4px;line-height:1.15}
   .modal .ms{color:var(--muted);font-size:14px;margin-bottom:12px}
-  .modal .mp{font-size:15px;line-height:1.55;margin:8px 0;text-align:left}
+  .modal .mp{font-size:15px;line-height:1.6;margin:8px 0;text-align:left}
   .modal .mp.c{text-align:center}
   .modal .mintel{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:15px;line-height:1.6}
   .modal .mintel p{margin:0 0 6px}
-  .modal .mintel b{color:var(--red2)}
+  .modal .mintel b{color:var(--wine)}
   .modal .hblock{text-align:left}
   .modal #modalBtns{margin-top:16px;display:grid;gap:8px}
-  .modal.dead{border-color:var(--red)}
-  .turnbanner{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#3a1720;border:1px solid var(--red2);font-weight:600;text-align:center}
+  .modal.dead{border-color:var(--wine)}
+  .modal.dead .mt{color:var(--wine)}
+  /* Ο ρόλος στην αρχή: σαν τραπουλόχαρτο */
+  .modal.paper{background:var(--paper);color:var(--paper-ink);border-color:var(--paper-line);position:relative}
+  .modal.paper .mt{color:var(--paper-wine);font-size:40px}
+  .modal.paper .mk,.modal.paper .ms,.modal.paper .note{color:#8A7A60}
+  .modal.paper .mintel{border-color:var(--paper-line)}
+  .modal.paper .mintel b{color:var(--paper-wine)}
+  .modal.paper button:not(.ghost){background:var(--paper-wine);color:#fff}
+  .modal.paper button.ghost{color:var(--paper-ink);border-color:var(--paper-line)}
+
+  /* ---------- Ιστορικό ---------- */
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
-  .hblock{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#120f16}
-  .hblock.night{border-color:#2b3456;background:#10121c}
-  .hblock.day{border-color:#4f3f22;background:#16120d}
-  .hblock h3{margin:0 0 6px;font-family:"Noto Serif",serif;font-size:15px;color:var(--gold)}
+  .log li:last-child{border-bottom:0}
+  .hblock{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin-bottom:14px}
+  .hblock.night{border-left-color:#3E4E8A}
+  .hblock.day{border-left-color:#C99A3E}
+  .hblock h3{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head)}
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
   .hvotes{display:grid;grid-template-columns:1fr auto 1fr;gap:2px 8px;font-size:14px;margin:4px 0 6px}
   .hvotes .ar{color:var(--muted)}
   .hres{font-weight:600}
-  .hres b{color:var(--red2)}
-  .log li:last-child{border-bottom:0}
-  .reveal li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
-  .reveal li span:last-child{color:var(--gold);font-weight:600}
-  .deadnote{padding:10px;border-radius:10px;background:#1d1620;color:var(--muted);font-size:13px;text-align:center;margin-top:10px}
-  .dmlist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-  .dmnote{color:var(--muted);font-size:13px;text-align:center;margin:2px 0 4px}
-  .dmrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);
-    color:var(--text);padding:12px 14px;border-radius:14px;font-weight:500}
-  .dmrow:hover{background:var(--panel2)}
-  .dmrow .av{width:36px;height:36px;border-radius:50%;background:#2a1f30;display:grid;place-items:center;font-weight:700;color:var(--gold);flex:none}
+  .hres b{color:var(--wine)}
+  .reveal li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .reveal li span:last-child{color:var(--head);font-weight:600;text-align:right}
+
+  /* ---------- Ιδιωτικά ---------- */
+  .dmlist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  .dmnote{color:var(--muted);font-size:13px;text-align:center;margin:2px 0 8px}
+  .dmrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);
+    color:var(--text);padding:12px 6px;border-radius:0;font-weight:500}
+  .dmrow:hover{background:var(--raise)}
+  .dmrow .av{width:40px;height:40px;border-radius:50%;background:var(--raise);display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--head);flex:none}
   .dmrow .mid{flex:1;min-width:0}
-  .dmrow .nm{font-size:15px}
+  .dmrow .nm{font-size:16px}
   .dmrow .pv{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
-  .dmrow .cnt{background:var(--red2);color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;flex:none}
+  .dmrow .cnt{background:var(--wine);color:#fff;font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;flex:none}
   .dmthread{flex:1;min-height:0;display:flex;flex-direction:column}
   .dmhead{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:15px}
-  .dmhead b{color:var(--gold)}
+  .dmhead b{color:var(--head)}
 
-  .host{border-color:rgba(217,180,106,.45)}
+  /* ---------- Host ---------- */
+  .host{border-color:color-mix(in srgb, var(--head) 45%, var(--line))}
   .summary li{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
-  .summary li span:last-child{color:var(--gold);font-weight:600}
+  .summary li span:last-child{color:var(--head);font-weight:600}
   .stack{display:grid;gap:8px}
   .confirm{display:flex;gap:8px;margin-top:8px}
   .confirm button{flex:1}
@@ -238,11 +319,11 @@
     <span class="who" id="gameWho"></span>
   </div>
   <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="flow">Παιχνίδι<span class="dot hidden" id="dotFlow"></span></button>
-    <button class="tab" data-tab="role">Ρόλος</button>
-    <button class="tab" data-tab="hist">Ιστορικό<span class="dot hidden" id="dotHist"></span></button>
-    <button class="tab" data-tab="dm">Ιδιωτικά<span class="dot hidden" id="dotDm"></span></button>
-    <button class="tab hidden" data-tab="killers" id="killersTab">🔪<span class="dot hidden" id="dotKillers"></span></button>
+    <button class="tab on" data-tab="flow"><span class="ic">🌙</span>Παιχνίδι<span class="dot hidden" id="dotFlow"></span></button>
+    <button class="tab" data-tab="role"><span class="ic">🎭</span>Ρόλος</button>
+    <button class="tab" data-tab="hist"><span class="ic">📜</span>Ιστορικό<span class="dot hidden" id="dotHist"></span></button>
+    <button class="tab" data-tab="dm"><span class="ic">💬</span>Ιδιωτικά<span class="dot hidden" id="dotDm"></span></button>
+    <button class="tab hidden" data-tab="killers" id="killersTab"><span class="ic">🔪</span>Δολοφόνοι<span class="dot hidden" id="dotKillers"></span></button>
   </div>
 
   <div class="pane" data-pane="flow" style="overflow-y:auto">
@@ -269,7 +350,7 @@
     <div class="rolecard closed" id="roleCard">
       <div id="roleClosed">
         <div class="rolelabel">Ο ρόλος σου</div>
-        <div class="rolename" style="color:var(--muted);font-size:26px">Πάτα για να τον δεις</div>
+        <div class="rolename">Πάτα για να τον δεις</div>
         <div class="tapnote">Βεβαιώσου ότι δεν κοιτάει κανείς.</div>
       </div>
       <div id="roleOpen" class="hidden">
@@ -629,6 +710,7 @@ function render(){
 }
 
 function showLobby(){
+  document.body.classList.remove("is-day");
   $("game").classList.add("hidden");
   $("lobby").classList.remove("hidden");
   stopChats();
@@ -1429,6 +1511,7 @@ function renderModals(g, A){
   if (!modal) { wrap.classList.add("hidden"); return; }
   body.textContent = ""; btns.textContent = "";
   wrap.querySelector(".modal").classList.toggle("dead", modal.type === "death");
+  wrap.querySelector(".modal").classList.toggle("paper", modal.type === "role");
 
   if (modal.type === "role") {
     const roleId = eff(g, me), role = ROLE_BY_ID[roleId];
@@ -1469,6 +1552,9 @@ function renderFlow(){
   const al = aliveIn(g);
   const card = $("phaseCard");
   card.className = "card phasecard " + (g.phase === "night" ? "night" : g.phase === "ended" ? "ended" : "day");
+  const isDay = g.phase === "day" || g.phase === "kamikaze";
+  document.body.classList.toggle("is-day", isDay);
+  const ic = document.querySelector('.tab[data-tab="flow"] .ic'); if (ic) ic.textContent = g.phase === "ended" ? "🏆" : isDay ? "☀️" : "🌙";
 
   // Νέα φάση → κόκκινη τελεία αν είσαι σε άλλη καρτέλα
   const ns = g.phase === "night" ? nightStatus(g, A) : null;
