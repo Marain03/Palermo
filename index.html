@@ -98,6 +98,11 @@
   .stepb{width:34px;height:34px;padding:0;border-radius:10px;font-size:18px;line-height:1}
   .stepb:disabled{opacity:.35}
   .chatempty:empty{display:none}
+  .qrbox{display:flex;justify-content:center;margin-top:6px}
+  .qrbox svg{border-radius:14px;max-width:72vw;height:auto}
+  .ghostrole{font-size:13px;color:var(--muted);text-align:right}
+  .ghostrole.bad{color:var(--wine);font-weight:600}
+  #ghostList .prow.out .ghostrole{text-decoration:line-through}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -388,7 +393,10 @@
       <div class="note" style="margin:0">Κωδικός παιχνιδιού</div>
       <div class="roomcode" id="roomCode"></div>
     </div>
-    <button type="button" class="ghost small" id="copyBtn">Αντιγραφή</button>
+    <div class="avbtns">
+      <button type="button" class="ghost small" id="qrBtn">QR</button>
+      <button type="button" class="ghost small" id="copyBtn">Αντιγραφή</button>
+    </div>
   </div>
 
   <div class="card" id="joinCard">
@@ -453,6 +461,10 @@
     <div class="card phasecard" id="phaseCard">
       <div class="phTitle" id="phTitle"></div>
       <div class="note" id="phSub"></div>
+    </div>
+    <div class="card hidden" id="ghostCard">
+      <h2>👻 Ποιος είναι ποιος</h2>
+      <div id="ghostList"></div>
     </div>
     <div class="card host hidden" id="recogBox"></div>
     <div class="card hidden" id="lastVote"></div>
@@ -585,6 +597,7 @@
 <script>
   if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 </script>
+<script src="qr.js"></script>
 <script type="module">
 // =====================================================================
 // 1) ΡΥΘΜΙΣΕΙΣ FIREBASE — αντικατέστησε με τις δικές σου
@@ -844,6 +857,7 @@ $("copyBtn").onclick = async () => {
   if (ok) { $("copyBtn").textContent = "Αντιγράφηκε ✓"; setTimeout(() => { $("copyBtn").textContent = "Αντιγραφή"; }, 1800); }
 };
 $("roomCode").onclick = () => $("copyBtn").click();
+$("qrBtn").onclick = () => openSheet("qr");
 $("backBtn").onclick = async () => {
   if (players[pid] && !(game && game.status === "playing")) { try { await remove(R("players/" + pid)); } catch (e) {} }
   goHome();
@@ -892,13 +906,40 @@ function onlineDot(id){
 
 // ---- ⚙️ Ρυθμίσεις (αποθηκεύονται σε αυτή τη συσκευή) ----
 const SETTINGS_KEY = "palermo.settings";
-let settings = { vibrate: true, wake: true };
+let settings = { vibrate: true, wake: true, sound: true };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch (e) {}
 function saveSettings(){ try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {} applySettings(); }
 function applySettings(){
   document.body.classList.remove("big");
   if (!settings.wake && wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
 }
+
+// ---- 🔊 Ήχοι (φτιάχνονται επιτόπου, χωρίς αρχεία) ----
+let actx = null;
+function audio(){
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (actx.state === "suspended") actx.resume().catch(() => {});
+  return actx;
+}
+["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => audio(), { once: true, capture: true }));
+function tone(freq, start, dur, type, vol){
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + start, o = a.createOscillator(), gn = a.createGain();
+  o.type = type || "sine"; o.frequency.setValueAtTime(freq, t);
+  gn.gain.setValueAtTime(0.0001, t);
+  gn.gain.exponentialRampToValueAtTime(vol || 0.18, t + 0.03);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(gn).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const SOUNDS = {
+  night(){ tone(220, 0, 1.6, "sine", .16); tone(261.6, .05, 1.6, "sine", .12); tone(329.6, .1, 1.7, "sine", .1); tone(110, 0, 1.8, "triangle", .08); },
+  dawn(){ [392, 523.3, 659.3, 784].forEach((f, i) => tone(f, i * .13, .9, "sine", .13)); },
+  turn(){ tone(880, 0, .25, "sine", .2); tone(1174.7, .16, .35, "sine", .18); },
+  death(){ tone(196, 0, .9, "triangle", .2); tone(146.8, .35, 1.3, "triangle", .18); },
+  vote(){ tone(523.3, 0, .35, "triangle", .14); tone(523.3, .2, .35, "triangle", .12); },
+  win(){ [523.3, 659.3, 784, 1046.5].forEach((f, i) => tone(f, i * .12, .7, "triangle", .14)); }
+};
+function playSound(k){ if (!settings.sound || !SOUNDS[k] || document.visibilityState === "hidden") return; try { SOUNDS[k](); } catch (e) {} }
 
 // ---- 📱 Η οθόνη να μη σβήνει ----
 let wakeLock = null;
@@ -918,6 +959,7 @@ const baseTitle = document.title;
 function stopTitleFlash(){ if (titleTimer) { clearInterval(titleTimer); titleTimer = null; } document.title = baseTitle; }
 function alertMyTurn(){
   try { if (settings.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+  playSound("turn");
   stopTitleFlash();
   let on = false;
   titleTimer = setInterval(() => { on = !on; document.title = on ? "🔔 Σειρά σου!" : baseTitle; }, 900);
@@ -1018,9 +1060,14 @@ function showGame(roleId){
   const role = ROLE_BY_ID[roleId];
   const isKiller = KILLERS.includes(roleId);
   const isSpy = roleId === "cop";                 // ο Αστυνομικός διαβάζει κρυφά
-  const seesKillers = isKiller || isSpy;
+  const ghost = amDead();                          // όποιος πέθανε τα βλέπει όλα
+  const seesKillers = isKiller || isSpy || ghost;
+  const chatMode = isKiller ? "k" : ghost ? "g" : isSpy ? "s" : "-";
+  if (chatSubs.killers && killersMode !== chatMode) { try { chatSubs.killers(); } catch (e) {} delete chatSubs.killers; }
+  killersMode = chatMode;
   $("spyNote").classList.add("hidden");
-  document.querySelector('form[data-chat="killers"]').classList.toggle("hidden", !isKiller);
+  document.querySelector('form[data-chat="killers"]').classList.toggle("hidden", !isKiller || ghost);
+  renderGhost(ghost);
 
   $("gameWho").textContent = nameOf(pid);
   $("killersTab").classList.toggle("hidden", !seesKillers);
@@ -1255,10 +1302,29 @@ function startChat(key, box, dotId){
     if (empty.parentNode) empty.remove();
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
     // Ο Αστυνομικός διαβάζει τα μηνύματα των δολοφόνων χωρίς να βλέπει ποιος τα έστειλε
-    const spyView = key === "killers" && !KILLERS.includes(eff(game, pid));
+    const spyView = key === "killers" && !KILLERS.includes(eff(game, pid)) && !amDead();
     box.appendChild(makeBubble(spyView ? { name: "🔪 Δολοφόνος", text: m.text, ts: m.ts, pid: "?" } : m));
     if (nearBottom || m.pid === pid) scrollBottom(box);
     if (tab !== key && m.pid !== pid) $(dotId).classList.remove("hidden");
+  });
+}
+let killersMode = null;
+// 👻 Ο νεκρός βλέπει τους ρόλους όλων
+function renderGhost(on){
+  const card = $("ghostCard"), list = $("ghostList");
+  card.classList.toggle("hidden", !on);
+  if (!on) return;
+  list.textContent = "";
+  const ids = Object.keys(game.roles || {}).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
+  ids.forEach(id => {
+    const row = document.createElement("div"); row.className = "prow" + (deadIn(game, id) ? " out" : "");
+    row.appendChild(avatarEl(id));
+    const n = document.createElement("span"); n.className = "pn"; n.textContent = nameOf(id); row.appendChild(n);
+    const r0 = game.roles[id], r1 = eff(game, id);
+    const rl = document.createElement("span"); rl.className = "ghostrole" + (KILLERS.includes(r1) ? " bad" : "");
+    rl.textContent = ROLE_BY_ID[r1].name + (r0 !== r1 ? " (πρώην Βιαστής)" : "") + ((game.couple || {})[id] ? " 💕" : "");
+    row.appendChild(rl);
+    list.appendChild(row);
   });
 }
 function stopChats(){
@@ -1352,6 +1418,16 @@ function renderSheet(){
   const body = $("sheetBody"); body.textContent = "";
   $("sheet").classList.remove("hidden");
 
+  if (sheetKind === "qr") {
+    $("sheetTitle").textContent = "Σκάναρε για να μπεις";
+    const g = group(body);
+    const box = mk("div", "qrbox");
+    try { box.innerHTML = window.PalermoQR(location.origin + location.pathname + "?t=" + ROOM, 240); } catch (e) {}
+    g.appendChild(box);
+    const c = mk("div", "roomcode center", ROOM); c.style.marginTop = "12px"; g.appendChild(c);
+    return;
+  }
+
   if (sheetKind === "photo") {
     $("sheetTitle").textContent = "Φωτογραφία";
     const g = group(body); const st = mk("div", "stack");
@@ -1371,6 +1447,7 @@ function renderSheet(){
       l.appendChild(c); g.appendChild(l);
     };
     row("Δόνηση όταν είναι η σειρά μου", "vibrate");
+    row("Ήχοι", "sound");
     row("Η οθόνη να μένει ανοιχτή", "wake");
     const more = group(body);
     const rules = mk("button", "ghost big", "📖 Πώς παίζεται το Παλέρμο"); rules.type = "button";
@@ -1402,6 +1479,7 @@ function renderSheet(){
 
   const rc = group(body, "Τραπέζι");
   const rcl = mk("div", "roomcode", ROOM); rcl.style.fontSize = "26px"; rc.appendChild(rcl);
+  const qb = mk("button", "ghost small", "Δείξε QR"); qb.type = "button"; qb.style.marginTop = "6px"; qb.onclick = () => openSheet("qr"); rc.appendChild(qb);
   const pg = group(body, "Παίκτες");
   const ids = playing ? Object.keys(g.roles || {}).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0)) : sortedPlayers().map(p => p.id);
   ids.forEach(id => {
@@ -1922,11 +2000,12 @@ function renderModals(g, A){
   else if (modal && modal.type === "role") closeModal();
 
   // 2) «Πέθανες»
-  if (!roleNeeded && dead && !isDeathSeen() && (!modal || modal.type !== "death")) modal = { type: "death" };
+  if (!roleNeeded && dead && !isDeathSeen() && (!modal || modal.type !== "death")) { modal = { type: "death" }; playSound("death"); }
 
   // 3) Αλλαγή φάσης / αυτοκτονία Καμικάζι
   if (!roleNeeded && !(modal && modal.type === "death") && prevPk && prevPk !== pk && prevPk.split(":")[0] === String(g.round)) {
     modal = { type: "phase", data: phaseSummary(g, prevPk) };
+    if (!dead || g.phase === "ended") playSound(g.phase === "night" ? "night" : g.phase === "day" ? "dawn" : g.phase === "ended" ? "win" : "vote");
   } else if (!roleNeeded && !modal && prevHistLen != null && H.length > prevHistLen) {
     const e = H[H.length - 1];
     if (e && e.k === "suicide" && e.by !== me && e.target !== me) {
