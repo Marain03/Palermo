@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
+<title>Palermo · Βραδιά παιχνιδιού</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@800&family=Noto+Serif:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0b10; --panel:#17131c; --panel2:#201a27; --line:#2e2636;
+    --text:#f3ece4; --muted:#a59aa8; --red:#c2253a; --red2:#e0405a; --gold:#d9b46a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+  body{
+    background:
+      radial-gradient(900px 500px at 50% -10%, rgba(194,37,58,.22), transparent 60%),
+      radial-gradient(600px 400px at 100% 100%, rgba(217,180,106,.07), transparent 60%),
+      var(--bg);
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:22px 16px 40px}
+  header{text-align:center;margin-bottom:18px}
+  .moon{width:40px;height:40px;margin:0 auto 8px;border-radius:50%;
+    box-shadow:inset -11px -4px 0 0 var(--gold);transform:rotate(-20deg);opacity:.9}
+  h1{font-family:Cinzel,serif;font-weight:800;letter-spacing:.14em;font-size:30px;margin:0}
+  .sub{color:var(--muted);font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:18px;padding:18px;margin-bottom:14px}
+  h2{font-family:"Noto Serif",serif;font-size:18px;margin:0 0 12px}
+  .row{display:flex;gap:10px}
+  input{flex:1;min-width:0;background:#0f0c13;border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:13px;font-size:16px;font-family:inherit;outline:none}
+  input:focus{border-color:var(--red)}
+  button{font-family:inherit;font-size:15px;font-weight:600;border:0;border-radius:12px;
+    padding:13px 18px;cursor:pointer;color:#fff;background:var(--red);transition:transform .08s,background .2s}
+  button:hover{background:var(--red2)}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  button.big{width:100%;padding:16px;font-size:16px}
+  button.small{padding:8px 12px;font-size:13px}
+  .msg{color:var(--red2);font-size:14px;min-height:18px;margin-top:8px}
+  .note{color:var(--muted);font-size:13px;line-height:1.5}
+  .center{text-align:center}
+  .hidden{display:none!important}
+  ul{list-style:none;margin:0;padding:0}
+  .players li{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+  .players li:last-child{border-bottom:0}
+  .num{width:28px;height:28px;border-radius:50%;background:#0f0c13;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:12px;color:var(--muted);flex:none}
+  .pname{flex:1;font-size:16px;overflow:hidden;text-overflow:ellipsis}
+  .me{color:var(--gold);font-size:12px;margin-left:6px}
+  .x{background:none;color:var(--muted);padding:6px 10px;font-size:18px}
+  .x:hover{background:none;color:var(--red2)}
+  .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px;margin-bottom:8px}
+  .badge{display:inline-block;background:var(--gold);color:#1a1208;font-size:11px;font-weight:700;
+    border-radius:8px;padding:2px 7px;letter-spacing:.05em}
+
+  /* Game screen */
+  #game{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
+  .gtop{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px}
+  .gtop .t{font-family:Cinzel,serif;letter-spacing:.12em;font-size:18px}
+  .gtop .who{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:6px;padding:0 12px 10px}
+  .tab{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:10px 6px;font-size:14px;position:relative}
+  .tab:hover{background:var(--panel2)}
+  .tab.on{background:var(--panel2);color:var(--text);border-color:var(--red)}
+  .tab .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red2)}
+  .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 12px 12px}
+  .rolecard{border-radius:20px;padding:34px 18px;text-align:center;cursor:pointer;user-select:none;
+    background:radial-gradient(circle at 50% 0%, rgba(194,37,58,.35), transparent 70%),#0f0c13;
+    border:1px solid var(--red)}
+  .rolecard.closed{border-style:dashed;border-color:var(--line);background:#0f0c13}
+  .rolelabel{color:var(--muted);font-size:12px;letter-spacing:.22em;text-transform:uppercase}
+  .rolename{font-family:"Noto Serif",serif;font-size:34px;font-weight:800;color:var(--gold);margin-top:10px}
+  .intel{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:15px;line-height:1.6}
+  .intel:empty{display:none}
+  .intel p{margin:0 0 6px}
+  .intel b{color:var(--red2)}
+  .team{display:inline-block;margin-top:8px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+  .tapnote{color:var(--muted);font-size:13px;margin-top:14px}
+
+  .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .chatbox.killers{border-color:rgba(194,37,58,.6);background:#160d12}
+  .bubble{max-width:82%;padding:8px 12px;border-radius:14px;background:var(--panel2);align-self:flex-start;word-wrap:break-word}
+  .bubble.mine{align-self:flex-end;background:#3a1720}
+  .bubble .n{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:2px}
+  .bubble .tm{font-size:10px;color:var(--muted);margin-left:8px;font-weight:400}
+  .bubble .tx{font-size:15px;line-height:1.4;white-space:pre-wrap}
+  .sys{align-self:center;color:var(--muted);font-size:12px;text-align:center}
+  .send{display:flex;gap:8px;margin-top:10px}
+  .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px}
+
+  .host{border-color:rgba(217,180,106,.45)}
+  .summary li{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+  .summary li span:last-child{color:var(--gold);font-weight:600}
+  .stack{display:grid;gap:8px}
+  .confirm{display:flex;gap:8px;margin-top:8px}
+  .confirm button{flex:1}
+</style>
+</head>
+<body>
+
+<!-- Setup missing -->
+<div class="wrap hidden" id="setup">
+  <header><div class="moon"></div><h1>PALERMO</h1></header>
+  <div class="card">
+    <h2>Λείπουν οι ρυθμίσεις του Firebase</h2>
+    <p class="note">Άνοιξε το αρχείο <b>index.html</b> και βάλε τις ρυθμίσεις του Firebase project σου στο <code>firebaseConfig</code>.</p>
+  </div>
+</div>
+
+<!-- Loading / error -->
+<div class="wrap" id="loading">
+  <header><div class="moon"></div><h1>PALERMO</h1><div class="sub">Βραδιά παιχνιδιού</div></header>
+  <p class="note center" id="loadingMsg">Σύνδεση…</p>
+</div>
+
+<!-- Join + lobby -->
+<div class="wrap hidden" id="lobby">
+  <header><div class="moon"></div><h1>PALERMO</h1><div class="sub">Βραδιά παιχνιδιού</div></header>
+
+  <div class="card" id="joinCard">
+    <h2>Μπες στο τραπέζι</h2>
+    <form id="joinForm" class="row" autocomplete="off">
+      <input id="nameInput" maxlength="20" placeholder="Το username σου">
+      <button type="submit" id="joinBtn">Μπαίνω</button>
+    </form>
+    <div class="msg" id="joinMsg"></div>
+  </div>
+
+  <div class="card hidden" id="waitCard">
+    <h2>Είσαι μέσα, <span id="myName"></span></h2>
+    <p class="note" id="waitNote">Περιμένουμε να μπουν όλοι. Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.</p>
+    <button class="ghost small" id="leaveBtn">Αποχώρηση</button>
+  </div>
+
+  <div class="card hidden" id="inProgressCard">
+    <h2>Το παιχνίδι έχει ξεκινήσει</h2>
+    <p class="note">Ο γύρος τρέχει ήδη. Περίμενε τον επόμενο γύρο ή ζήτα από τον host να ξεκινήσει νέο παιχνίδι.</p>
+  </div>
+
+  <div class="card">
+    <div class="meta"><span>Παίκτες</span><span id="countLabel">0 / 10</span></div>
+    <ul class="players" id="playerList"></ul>
+  </div>
+
+  <div id="hostLobby"></div>
+</div>
+
+<!-- Game -->
+<div id="game" class="hidden">
+  <div class="gtop">
+    <span class="t">PALERMO</span>
+    <span class="who" id="gameWho"></span>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-tab="role">Ο ρόλος μου</button>
+    <button class="tab" data-tab="all">Συνομιλία<span class="dot hidden" id="dotAll"></span></button>
+    <button class="tab hidden" data-tab="killers" id="killersTab">🔪 Δολοφόνοι<span class="dot hidden" id="dotKillers"></span></button>
+  </div>
+
+  <div class="pane" data-pane="role" style="overflow-y:auto">
+    <div class="rolecard closed" id="roleCard">
+      <div id="roleClosed">
+        <div class="rolelabel">Ο ρόλος σου</div>
+        <div class="rolename" style="color:var(--muted);font-size:26px">Πάτα για να τον δεις</div>
+        <div class="tapnote">Βεβαιώσου ότι δεν κοιτάει κανείς.</div>
+      </div>
+      <div id="roleOpen" class="hidden">
+        <div class="rolelabel" id="roleFor"></div>
+        <div class="rolename" id="roleName"></div>
+        <div class="intel" id="roleIntel"></div>
+        <div class="tapnote">Πάτα ξανά για να κρυφτεί.</div>
+      </div>
+    </div>
+    <div id="hostGame" style="margin-top:14px"></div>
+  </div>
+
+  <div class="pane hidden" data-pane="all">
+    <div class="chatbox" id="chatAll"><div class="chatempty">Κανένα μήνυμα ακόμα. Πες ένα γεια.</div></div>
+    <form class="send" data-chat="all" autocomplete="off">
+      <input maxlength="300" placeholder="Γράψε σε όλους…">
+      <button type="submit">Στείλε</button>
+    </form>
+  </div>
+
+  <div class="pane hidden" data-pane="killers">
+    <div class="chatbox killers" id="chatKillers"><div class="chatempty">Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία.</div></div>
+    <form class="send" data-chat="killers" autocomplete="off">
+      <input maxlength="300" placeholder="Γράψε στον συνεργό σου…">
+      <button type="submit">Στείλε</button>
+    </form>
+  </div>
+</div>
+
+<!-- Host panel template (shown to the first player who joined) -->
+<template id="hostTpl">
+  <div class="card host">
+    <div class="meta"><span>Είσαι ο host</span><span class="badge">HOST</span></div>
+    <div class="stack">
+      <button class="big" data-act="start">Ξεκίνα το παιχνίδι</button>
+      <div class="note center" data-el="hostMsg"></div>
+      <button class="ghost" data-act="newRound">Νέος γύρος, ίδιοι παίκτες</button>
+      <button class="ghost" data-act="newGame">Νέο παιχνίδι (καθάρισμα όλων)</button>
+      <div class="confirm hidden" data-el="confirm">
+        <button data-act="yes">Ναι, σίγουρα</button>
+        <button class="ghost" data-act="no">Άκυρο</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+// =====================================================================
+// 1) ΡΥΘΜΙΣΕΙΣ FIREBASE — αντικατέστησε με τις δικές σου
+// =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAYxk2Yw56dsWCc0O9dcwRw2lVHSwNRb4k",
+  authDomain: "palermo-1078b.firebaseapp.com",
+  databaseURL: "https://palermo-1078b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "palermo-1078b",
+  storageBucket: "palermo-1078b.firebasestorage.app",
+  messagingSenderId: "841869282017",
+  appId: "1:841869282017:web:88f485ae43ece15e7885a0"
+};
+// =====================================================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getDatabase, ref, onValue, set, push, remove, update, query,
+  limitToLast, onChildAdded, runTransaction, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const $ = id => document.getElementById(id);
+
+if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes("PASTE")) {
+  $("loading").classList.add("hidden");
+  $("setup").classList.remove("hidden");
+  throw new Error("Firebase config missing");
+}
+
+// ---- Οι 10 ρόλοι ----
+const ROLES = [
+  { id:"killerOpen",   name:"Φανερός Δολοφόνος", team:"Δολοφόνοι" },
+  { id:"killerHidden", name:"Κρυφός Δολοφόνος",  team:"Δολοφόνοι" },
+  { id:"cop",          name:"Αστυνομικός",       team:"Πόλη" },
+  { id:"whore",        name:"Πουτάνα",           team:"Πόλη" },
+  { id:"mayor",        name:"Δήμαρχος",          team:"Πόλη" },
+  { id:"doctor",       name:"Γιατρός",           team:"Πόλη" },
+  { id:"kamikaze",     name:"Καμικάζι",          team:"Πόλη" },
+  { id:"crazy",        name:"Τρέλα",             team:"Πόλη" },
+  { id:"citizen",      name:"Πολίτης",           team:"Πόλη" },
+  { id:"citizen",      name:"Πολίτης",           team:"Πόλη" },
+];
+const ROLE_BY_ID = Object.fromEntries(ROLES.map(r => [r.id, r]));
+const NEEDED = ROLES.length;
+const KILLERS = ["killerOpen", "killerHidden"];
+// Τι γνωρίζει κάθε ρόλος
+const KNOWS = {
+  killerOpen:   [["Ο Κρυφός Δολοφόνος είναι", "killerHidden"]],
+  killerHidden: [["Ο Φανερός Δολοφόνος είναι", "killerOpen"]],
+  cop:          [["Ο Φανερός Δολοφόνος είναι", "killerOpen"]],
+  whore:        [["Ο Φανερός Δολοφόνος είναι", "killerOpen"], ["Ο Κρυφός Δολοφόνος είναι", "killerHidden"]],
+};
+
+// Host = ο πρώτος που μπήκε στο τραπέζι
+const hostId = () => { const l = sortedPlayers(); return l.length ? l[0].id : null; };
+const amHost = () => hostId() === pid;
+
+// ---- Ταυτότητα αυτής της συσκευής ----
+function loadPid(){
+  try {
+    let p = localStorage.getItem("palermo.pid");
+    if (!p) { p = "p" + Math.random().toString(36).slice(2, 12); localStorage.setItem("palermo.pid", p); }
+    return p;
+  } catch(e) { return "p" + Math.random().toString(36).slice(2, 12); }
+}
+const pid = loadPid();
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const R = path => ref(db, "palermo/" + path);
+
+// ---- State ----
+let players = {};          // pid -> {name, ts}
+let game = null;           // {status, round, roles:{pid:roleId}}
+let gotPlayers = false, gotGame = false;
+let tab = "role";
+let roleOpen = false;
+let chatSubs = {};         // key -> unsubscribe
+let chatRound = null;
+
+const loadTimer = setTimeout(() => {
+  $("loadingMsg").textContent = "Δεν μπορώ να συνδεθώ στη βάση. Έλεγξε τις ρυθμίσεις Firebase και το ίντερνετ.";
+}, 10000);
+
+onValue(R("players"), snap => { players = snap.val() || {}; gotPlayers = true; render(); },
+  err => { $("loadingMsg").textContent = "Σφάλμα βάσης: " + err.message; });
+onValue(R("game"), snap => { game = snap.val(); gotGame = true; render(); },
+  err => { $("loadingMsg").textContent = "Σφάλμα βάσης: " + err.message; });
+
+// ---- Helpers ----
+const sortedPlayers = () => Object.entries(players)
+  .map(([id, p]) => ({ id, name: p.name, ts: p.ts || 0 }))
+  .sort((a, b) => a.ts - b.ts);
+const myRoleId = () => game && game.status === "playing" && game.roles ? game.roles[pid] : null;
+const nameOf = id => (players[id] && players[id].name) || "—";
+const whoHas = roleId => {
+  if (!game || !game.roles) return "—";
+  const e = Object.entries(game.roles).find(([, r]) => r === roleId);
+  return e ? nameOf(e[0]) : "—";
+};
+function randInt(n){
+  const a = new Uint32Array(1);
+  try { crypto.getRandomValues(a); return a[0] % n; } catch(e){ return Math.floor(Math.random()*n); }
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = randInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// ---- Render ----
+function render(){
+  if (!gotPlayers || !gotGame) return;
+  clearTimeout(loadTimer);
+  $("loading").classList.add("hidden");
+
+  const roleId = myRoleId();
+  if (roleId) { showGame(roleId); }
+  else { showLobby(); }
+}
+
+function showLobby(){
+  $("game").classList.add("hidden");
+  $("lobby").classList.remove("hidden");
+  stopChats();
+
+  const list = sortedPlayers();
+  const joined = !!players[pid];
+  const playing = game && game.status === "playing";
+
+  $("joinCard").classList.toggle("hidden", joined || playing);
+  $("waitCard").classList.toggle("hidden", !joined);
+  $("inProgressCard").classList.toggle("hidden", !(playing && !joined));
+  if (joined) $("myName").textContent = players[pid].name;
+  if (joined && playing) $("waitNote").textContent = "Το παιχνίδι ξεκίνησε χωρίς εσένα. Περίμενε τον επόμενο γύρο.";
+  else $("waitNote").textContent = `Περιμένουμε να μπουν όλοι (${list.length}/${NEEDED}). Όταν μπουν και οι ${NEEDED}, ο host ξεκινά το παιχνίδι και θα δεις τον ρόλο σου εδώ.`;
+
+  const full = list.length >= NEEDED;
+  $("nameInput").disabled = full;
+  $("joinBtn").disabled = full;
+  if (full && !joined && !playing) $("joinMsg").textContent = "Το τραπέζι είναι γεμάτο (10 παίκτες).";
+
+  const ul = $("playerList"); ul.textContent = "";
+  if (!list.length) {
+    const li = document.createElement("li"); li.className = "note"; li.style.justifyContent = "center";
+    li.textContent = "Δεν έχει μπει κανείς ακόμα."; ul.appendChild(li);
+  }
+  list.forEach((p, i) => {
+    const li = document.createElement("li");
+    const n = document.createElement("span"); n.className = "num"; n.textContent = i + 1;
+    const name = document.createElement("span"); name.className = "pname"; name.textContent = p.name;
+    if (p.id === pid) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
+    if (i === 0) { const h = document.createElement("span"); h.className = "badge"; h.style.marginLeft = "8px"; h.textContent = "HOST"; name.appendChild(h); }
+    li.append(n, name);
+    if (amHost() && p.id !== pid) {
+      const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Αφαίρεση παίκτη";
+      x.onclick = () => remove(R("players/" + p.id));
+      li.appendChild(x);
+    }
+    ul.appendChild(li);
+  });
+  $("countLabel").textContent = list.length + " / " + NEEDED;
+
+  renderHost($("hostLobby"));
+}
+
+function showGame(roleId){
+  $("lobby").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  const role = ROLE_BY_ID[roleId];
+  const isKiller = KILLERS.includes(roleId);
+
+  $("gameWho").textContent = nameOf(pid);
+  $("killersTab").classList.toggle("hidden", !isKiller);
+  if (!isKiller && tab === "killers") setTab("role");
+
+  // Role card
+  $("roleFor").textContent = nameOf(pid) + ", είσαι";
+  $("roleName").textContent = role.name;
+  const intel = $("roleIntel"); intel.textContent = "";
+  (KNOWS[roleId] || []).forEach(([label, rid]) => {
+    const p = document.createElement("p");
+    p.append(label + ": ");
+    const b = document.createElement("b"); b.textContent = whoHas(rid);
+    p.appendChild(b); intel.appendChild(p);
+  });
+  const t = document.createElement("div"); t.className = "team"; t.textContent = "Ομάδα: " + role.team;
+  intel.appendChild(t);
+  applyRoleOpen();
+
+  // Chats: re-subscribe when the round changes
+  if (chatRound !== game.round) {
+    stopChats();
+    chatRound = game.round;
+    roleOpen = false; applyRoleOpen();
+    startChat("all", $("chatAll"), "dotAll");
+    if (isKiller) startChat("killers", $("chatKillers"), "dotKillers");
+  } else if (isKiller && !chatSubs.killers) {
+    startChat("killers", $("chatKillers"), "dotKillers");
+  }
+
+  renderHost($("hostGame"));
+}
+
+function applyRoleOpen(){
+  $("roleCard").classList.toggle("closed", !roleOpen);
+  $("roleClosed").classList.toggle("hidden", roleOpen);
+  $("roleOpen").classList.toggle("hidden", !roleOpen);
+}
+$("roleCard").onclick = () => { roleOpen = !roleOpen; applyRoleOpen(); };
+
+// ---- Tabs ----
+function setTab(t){
+  tab = t;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  document.querySelectorAll(".pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t));
+  if (t === "all") { $("dotAll").classList.add("hidden"); scrollBottom($("chatAll")); }
+  if (t === "killers") { $("dotKillers").classList.add("hidden"); scrollBottom($("chatKillers")); }
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+// ---- Chat ----
+const scrollBottom = el => { el.scrollTop = el.scrollHeight; };
+function chatPath(key){ return "chat/" + (game && game.round || 0) + "/" + key; }
+
+function startChat(key, box, dotId){
+  box.textContent = "";
+  const empty = document.createElement("div"); empty.className = "chatempty";
+  empty.textContent = key === "killers" ? "Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία." : "Κανένα μήνυμα ακόμα. Πες ένα γεια.";
+  box.appendChild(empty);
+  const q = query(R(chatPath(key)), limitToLast(300));
+  chatSubs[key] = onChildAdded(q, snap => {
+    const m = snap.val(); if (!m) return;
+    if (empty.parentNode) empty.remove();
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    const b = document.createElement("div");
+    b.className = "bubble" + (m.pid === pid ? " mine" : "");
+    const n = document.createElement("div"); n.className = "n"; n.textContent = m.name || "—";
+    const tm = document.createElement("span"); tm.className = "tm";
+    if (typeof m.ts === "number") tm.textContent = new Date(m.ts).toLocaleTimeString("el-GR", { hour:"2-digit", minute:"2-digit" });
+    n.appendChild(tm);
+    const tx = document.createElement("div"); tx.className = "tx"; tx.textContent = m.text || "";
+    b.append(n, tx); box.appendChild(b);
+    if (nearBottom || m.pid === pid) scrollBottom(box);
+    if (tab !== key && m.pid !== pid) $(dotId).classList.remove("hidden");
+  });
+}
+function stopChats(){
+  Object.values(chatSubs).forEach(u => { try { u(); } catch(e){} });
+  chatSubs = {}; chatRound = null;
+}
+
+document.querySelectorAll("form.send").forEach(f => {
+  f.addEventListener("submit", e => {
+    e.preventDefault();
+    const input = f.querySelector("input");
+    const text = input.value.trim();
+    const key = f.dataset.chat;
+    if (!text || !myRoleId()) return;
+    if (key === "killers" && !KILLERS.includes(myRoleId())) return;
+    push(R(chatPath(key)), { pid, name: nameOf(pid), text, ts: serverTimestamp() });
+    input.value = "";
+    input.focus();
+  });
+});
+
+// ---- Join / leave ----
+$("joinForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("joinMsg");
+  const name = $("nameInput").value.trim().replace(/\s+/g, " ");
+  if (!name) { msg.textContent = "Γράψε πρώτα ένα username."; return; }
+  if (game && game.status === "playing") { msg.textContent = "Το παιχνίδι έχει ήδη ξεκινήσει."; return; }
+  $("joinBtn").disabled = true;
+  let reason = "";
+  try {
+    const res = await runTransaction(R("players"), cur => {
+      cur = cur || {};
+      const others = Object.entries(cur).filter(([id]) => id !== pid);
+      if (others.length >= NEEDED) { reason = "Το τραπέζι είναι γεμάτο (10 παίκτες)."; return; }
+      if (others.some(([, p]) => (p.name || "").toLowerCase() === name.toLowerCase())) { reason = "Αυτό το username υπάρχει ήδη."; return; }
+      reason = "";
+      cur[pid] = { name, ts: Date.now() };
+      return cur;
+    });
+    if (!res.committed) { msg.textContent = reason || "Δεν έγινε. Δοκίμασε ξανά."; }
+    else { msg.textContent = ""; $("nameInput").value = ""; }
+  } catch (err) {
+    msg.textContent = "Σφάλμα: " + err.message;
+  } finally {
+    $("joinBtn").disabled = false;
+  }
+});
+$("leaveBtn").onclick = () => remove(R("players/" + pid));
+
+// ---- Host ----
+let pendingConfirm = null;
+function renderHost(container){
+  if (!amHost()) { container.textContent = ""; return; }
+  if (!container.firstElementChild) container.appendChild($("hostTpl").content.cloneNode(true));
+  const el = n => container.querySelector(`[data-el="${n}"]`);
+  const act = n => container.querySelector(`[data-act="${n}"]`);
+  const count = Object.keys(players).length;
+  const playing = game && game.status === "playing";
+
+  act("start").classList.toggle("hidden", playing);
+  act("start").disabled = count !== NEEDED;
+  el("hostMsg").textContent = playing
+    ? `Γύρος ${game.round} σε εξέλιξη. Κανείς δεν βλέπει τους ρόλους των άλλων.`
+    : count === NEEDED ? "Είναι όλοι εδώ! Πάτα για να μοιραστούν οι ρόλοι."
+    : count > NEEDED ? `Είναι ${count} παίκτες, βγάλε ${count - NEEDED} με το ×.`
+    : `Περιμένουμε ακόμα ${NEEDED - count} παίκτες (${count}/${NEEDED}).`;
+  act("newRound").classList.toggle("hidden", !playing);
+  el("confirm").classList.toggle("hidden", !pendingConfirm);
+
+  act("start").onclick = async () => { act("start").disabled = true; await deal(false); };
+  act("newRound").onclick = () => { pendingConfirm = "round"; renderHost(container); };
+  act("newGame").onclick = () => { pendingConfirm = "game"; renderHost(container); };
+  act("no").onclick = () => { pendingConfirm = null; renderHost(container); };
+  act("yes").onclick = async () => {
+    const what = pendingConfirm; pendingConfirm = null;
+    if (what === "round") await deal(true);
+    if (what === "game") await set(ref(db, "palermo"), null);
+    render();
+  };
+}
+
+async function deal(force){
+  const ids = sortedPlayers().map(p => p.id);
+  if (ids.length !== NEEDED) return;
+  const prevRound = (game && game.round) || 0;
+  const res = await runTransaction(R("game"), cur => {
+    if (!force && cur && cur.status === "playing") return;      // κάποιος άλλος πρόλαβε
+    const picked = shuffle(ROLES.map(r => r.id));
+    const roles = {};
+    ids.forEach((id, i) => roles[id] = picked[i]);
+    return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles };
+  });
+  if (res.committed && prevRound) remove(R("chat/" + prevRound)).catch(() => {});
+}
+</script>
+</body>
+</html>
