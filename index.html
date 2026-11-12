@@ -87,6 +87,10 @@
   .guide ul{margin:0;padding-left:20px;list-style:disc}
   .guide li{font-size:15px;line-height:1.5;margin-bottom:6px}
   .rules{margin-top:14px}
+  .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .rtog{background:#0f0c13;border:1px solid var(--line);color:var(--muted);padding:9px 8px;font-size:13px;font-weight:500}
+  .rtog:hover{background:#1a1520}
+  .rtog.on{border-color:var(--gold);color:var(--text);background:#211a12}
   .rules summary{cursor:pointer;font-weight:600;font-size:15px}
   .rulesBody{margin-top:8px}
 
@@ -192,6 +196,11 @@
     <button class="ghost small" id="leaveBtn">Αποχώρηση</button>
   </div>
 
+  <div class="card" id="lobbyRoles">
+    <div class="meta"><span>Ρόλοι σε αυτό το παιχνίδι</span></div>
+    <p class="note" id="lobbyRolesText" style="margin:0"></p>
+  </div>
+
   <div class="card hidden" id="inProgressCard">
     <h2>Το παιχνίδι έχει ξεκινήσει</h2>
     <p class="note">Ο γύρος τρέχει ήδη. Περίμενε τον επόμενο γύρο ή ζήτα από τον host να ξεκινήσει νέο παιχνίδι.</p>
@@ -225,6 +234,7 @@
       <div class="note" id="phSub"></div>
     </div>
     <div class="card host hidden" id="recogBox"></div>
+    <div class="card hidden" id="lastVote"></div>
     <div class="card" id="actionCard">
       <h2 id="actTitle"></h2>
       <p class="note" id="actNote"></p>
@@ -268,8 +278,9 @@
         <h3>Ρόλοι σε αυτό το παιχνίδι</h3>
         <p id="inPlay"></p>
         <h3>Η ροή</h3>
-        <p><b>Νύχτα:</b> όλοι κλείνουν τα μάτια. Πρώτα οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν, μετά ο Γιατρός διαλέγει ποιον θα προστατέψει (χωρίς να ξέρει το θύμα), και μετά ξημερώνει.</p>
-        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Αν βγει ισοπαλία, δεν βγαίνει κανείς.</p>
+        <p><b>Νύχτα 1 (αναγνώριση):</b> ο καθένας μαθαίνει τον ρόλο του και ό,τι ξέρει. Ο Βιαστής (αν υπάρχει) αντιγράφει ρόλο. Δεν σκοτώνει κανείς.</p>
+        <p><b>Από τη Νύχτα 2:</b> πρώτα οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν (πρέπει να συμφωνήσουν στο ίδιο άτομο), μετά ο Γιατρός διαλέγει ποιον θα προστατέψει (χωρίς να ξέρει το θύμα), και μετά ξημερώνει.</p>
+        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Οι ψήφοι μένουν κρυφές μέχρι να ψηφίσουν όλοι, και μετά φαίνεται ποιος ψήφισε ποιον. Αν βγει ισοπαλία, δεν βγαίνει κανείς.</p>
         <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
         <h3>Ποιος κερδίζει</h3>
         <p><b>Η Πόλη:</b> όταν βγουν και οι δύο δολοφόνοι.</p>
@@ -279,7 +290,7 @@
         <h3>Ποιος ξέρει τι</h3>
         <p>Οι δύο δολοφόνοι ξέρουν ο ένας τον άλλον. Ο Αστυνομικός ξέρει τον Φανερό Δολοφόνο. Η Πουτάνα ξέρει και τους δύο.</p>
         <h3>Ειδικοί κανόνες</h3>
-        <p><b>Νύχτα 1:</b> πρώτα παίζει ο Βιαστής (αν υπάρχει), μετά οι δολοφόνοι, μετά ο Γιατρός.</p>
+
         <p><b>Μπάτμαν:</b> δεν πεθαίνει τη νύχτα από τους δολοφόνους, μόνο στην ψηφοφορία.</p>
         <p><b>Αναγνώριση μετά τον Βιαστή:</b> όταν ο Βιαστής αντιγράψει ρόλο, όσοι «βλέπουν» αυτόν τον ρόλο τον μαθαίνουν (π.χ. οι δολοφόνοι μαθαίνουν τον νέο δολοφόνο), και ο ίδιος μαθαίνει ό,τι ξέρει ο νέος του ρόλος.</p>
       </div>
@@ -312,7 +323,7 @@
 
   <div class="pane hidden" data-pane="killers">
     <div class="chatbox killers" id="chatKillers"><div class="chatempty">Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία.</div></div>
-    <div class="spynote hidden" id="spyNote">🕵️ Διαβάζεις κρυφά τη συνομιλία των δολοφόνων. Δεν μπορείς να γράψεις εδώ.</div>
+    <div class="spynote hidden" id="spyNote">🕵️ Διαβάζεις κρυφά τη συνομιλία των δολοφόνων, χωρίς να βλέπεις ποιος γράφει τι. Δεν μπορείς να γράψεις εδώ.</div>
     <form class="send" data-chat="killers" autocomplete="off">
       <input maxlength="300" placeholder="Γράψε στον συνεργό σου…">
       <button type="submit">Στείλε</button>
@@ -325,6 +336,7 @@
   <div class="card host">
     <div class="meta"><span>Είσαι ο host</span><span class="badge">HOST</span></div>
     <div class="stack">
+      <div data-el="rolesPick"></div>
       <button class="big" data-act="start">Ξεκίνα το παιχνίδι</button>
       <div class="note center" data-el="hostMsg"></div>
       <button class="ghost hidden" data-act="bots">🤖 Γέμισε με δοκιμαστικούς παίκτες</button>
@@ -371,24 +383,27 @@ if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes("PASTE"))
 // Η σειρά μετράει: με Ν παίκτες μοιράζονται οι πρώτοι Ν ρόλοι της λίστας.
 // 6: 2 δολοφόνοι, Αστυνομικός, Γιατρός, Πουτάνα, Πολίτης · 7: +Δήμαρχος · 8: +Καμικάζι · 9: +Τρέλα · 10: +Πολίτης
 // 11: +Μπάτμαν · 12: +Βιαστής
-const ROLE_ORDER = ["killerOpen","killerHidden","cop","doctor","whore","citizen","mayor","kamikaze","crazy","citizen","batman","rapist"];
-const MIN_PLAYERS = 6, MAX_PLAYERS = ROLE_ORDER.length;
+// Σειρά εμφάνισης ρόλων στις λίστες
+const ROLE_ORDER = ["killerOpen","killerHidden","cop","doctor","whore","batman","rapist","mayor","kamikaze","crazy","citizen"];
+// Ειδικοί ρόλοι που διαλέγει ο host. Η σειρά είναι και η αυτόματη επιλογή ανά αριθμό παικτών.
+const OPTIONAL = ["cop","doctor","whore","batman","rapist","mayor","kamikaze","crazy"];
+const MIN_PLAYERS = 6, MAX_PLAYERS = 12;
 const ROLE_BY_ID = {
   killerOpen: {
     name:"Φανερός Δολοφόνος", team:"Δολοφόνοι",
-    does:"Κάθε νύχτα, μαζί με τον Κρυφό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη, συζητάς και ψηφίζεις όπως όλοι.",
+    does:"Από τη δεύτερη νύχτα και μετά, μαζί με τον Κρυφό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε (πρέπει να συμφωνήσετε στο ίδιο άτομο). Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη, συζητάς και ψηφίζεις όπως όλοι.",
     goal:"Να μείνετε ζωντανοί εσείς οι δύο μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
     tips:["Ο Αστυνομικός και η Πουτάνα ξέρουν ποιος είσαι. Είσαι ο πιο εκτεθειμένος από τους δύο.","Προσπάθησε να καταλάβεις ποιος σε υποψιάζεται «υπερβολικά σωστά»: μάλλον είναι ο Αστυνομικός ή η Πουτάνα. Αυτοί είναι οι πρώτοι σας στόχοι.","Μην υπερασπίζεσαι φανερά τον Κρυφό, για να μην τον «κάψεις»."]
   },
   killerHidden: {
     name:"Κρυφός Δολοφόνος", team:"Δολοφόνοι",
-    does:"Κάθε νύχτα, μαζί με τον Φανερό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη.",
+    does:"Από τη δεύτερη νύχτα και μετά, μαζί με τον Φανερό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε (πρέπει να συμφωνήσετε στο ίδιο άτομο). Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη.",
     goal:"Να μείνετε ζωντανοί μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
     tips:["Ο Αστυνομικός ΔΕΝ ξέρει ποιος είσαι. Μόνο η Πουτάνα σε ξέρει.","Είσαι το κρυφό χαρτί της ομάδας. Αν πέσει ο Φανερός, συνεχίζεις μόνος σου.","Καμιά φορά βοηθάει να ψηφίσεις κι εσύ τον Φανερό, για να φανείς αθώος."]
   },
   cop: {
     name:"Αστυνομικός", team:"Πόλη",
-    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Επιπλέον, στην καρτέλα 🔪 διαβάζεις κρυφά τη συνομιλία των δολοφόνων (χωρίς να μπορείς να γράψεις). Η δουλειά σου είναι να πείσεις την Πόλη να τους ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
+    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Επιπλέον, στην καρτέλα 🔪 διαβάζεις κρυφά τη συνομιλία των δολοφόνων. Βλέπεις τα μηνύματα αλλά όχι ποιος τα έγραψε, και δεν μπορείς να γράψεις. Η δουλειά σου είναι να πείσεις την Πόλη να τους ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
     tips:["Αν οι δολοφόνοι καταλάβουν ποιος είσαι, θα σε σκοτώσουν την επόμενη νύχτα. Κατηγόρησε με τρόπο που να μοιάζει με απλή υποψία.","Δεν σου λέει κανείς ποιος είναι ο Κρυφός, αλλά από τη συνομιλία των δολοφόνων μπορεί να το καταλάβεις. Πρόσεξε όμως: αν δείξεις ότι ξέρεις τι λένε, θα καταλάβουν ποιος είσαι.","Η Πουτάνα ξέρει κι αυτή τον Φανερό. Αν δεις κάποιον να κατηγορεί σωστά, ίσως είναι σύμμαχος."]
   },
@@ -400,7 +415,7 @@ const ROLE_BY_ID = {
   },
   doctor: {
     name:"Γιατρός", team:"Πόλη",
-    does:"Κάθε νύχτα, αφού διαλέξουν οι δολοφόνοι, έρχεται η σειρά σου: διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Δεν ξέρεις ποιον διάλεξαν. Αν πέσεις μέσα, ο παίκτης δεν πεθαίνει. Μόλις διαλέξεις, ξημερώνει.",
+    does:"Από τη δεύτερη νύχτα και μετά, αφού διαλέξουν οι δολοφόνοι, έρχεται η σειρά σου: διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Δεν ξέρεις ποιον διάλεξαν. Αν πέσεις μέσα, ο παίκτης δεν πεθαίνει. Μόλις διαλέξεις, ξημερώνει.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
     tips:["Προστάτεψε όποιον φαίνεται ότι ξέρει κάτι (πιθανός Αστυνομικός ή Πουτάνα). Αυτούς θα κυνηγήσουν οι δολοφόνοι.","Αν σώσεις κάποιον, μην το πεις αμέσως, γιατί θα αποκαλυφθείς.","Δεν μπορείς να σώσεις τον ίδιο παίκτη δύο νύχτες στη σειρά.","Τον εαυτό σου μπορείς να τον σώσεις μόνο μία φορά σε όλο το παιχνίδι. Κράτα τη για όταν κινδυνεύεις."]
   },
@@ -430,7 +445,7 @@ const ROLE_BY_ID = {
   },
   rapist: {
     name:"Βιαστής", team:"Μόνος του",
-    does:"Την πρώτη νύχτα, πριν από τους δολοφόνους, διαλέγεις έναν παίκτη και αντιγράφεις τον ρόλο του. Από εκεί και πέρα παίζεις με αυτόν τον ρόλο και την ομάδα του, και ο άλλος κρατάει κι αυτός τον ρόλο του. Αν όμως διαλέξεις τον Μπάτμαν, πεθαίνεις, γιατί ο Μπάτμαν δεν βιάζεται.",
+    does:"Την πρώτη νύχτα (της αναγνώρισης), πριν μάθουν οι άλλοι τα νέα, διαλέγεις έναν παίκτη και αντιγράφεις τον ρόλο του. Από εκεί και πέρα παίζεις με αυτόν τον ρόλο και την ομάδα του, και ο άλλος κρατάει κι αυτός τον ρόλο του. Αν όμως διαλέξεις τον Μπάτμαν, πεθαίνεις, γιατί ο Μπάτμαν δεν βιάζεται.",
     goal:"Να πάρεις έναν καλό ρόλο και να κερδίσεις με την ομάδα του.",
     tips:["Δεν ξέρεις ποιος είναι ποιος. Η επιλογή σου είναι ρίσκο.","Μόλις αντιγράψεις ρόλο γίνεται ξανά αναγνώριση: αν γίνεις δολοφόνος, σε μαθαίνουν οι δολοφόνοι (και τους μαθαίνεις), αν γίνεις Πουτάνα μαθαίνεις τους δολοφόνους, αν γίνεις Αστυνομικός μαθαίνεις τον Φανερό. Ως Πολίτης δεν μαθαίνεις τίποτα.","Μετά την πρώτη νύχτα, δες την καρτέλα «Ρόλος» για να διαβάσεις τι κάνει ο νέος σου ρόλος."]
   },
@@ -441,7 +456,16 @@ const ROLE_BY_ID = {
     tips:["Πρόσεξε ποιος αλλάζει γνώμη εύκολα ή ψηφίζει πάντα «μαζί» με κάποιον.","Μπορείς να μπλοφάρεις ότι έχεις σημαντικό ρόλο, για να τραβήξεις τους δολοφόνους πάνω σου."]
   }
 };
-const rolesFor = n => ROLE_ORDER.slice(0, n);
+// Ρόλοι του παιχνιδιού: 2 δολοφόνοι + οι ειδικοί που διάλεξε ο host + Πολίτες για όσους περισσεύουν
+let cfg = null;
+const selectedRoles = n => (cfg && cfg.custom)
+  ? OPTIONAL.filter(r => cfg.roles && cfg.roles[r])
+  : OPTIONAL.slice(0, Math.max(0, n - 3));
+function rolesForGame(n){
+  const arr = ["killerOpen", "killerHidden", ...selectedRoles(n)];
+  while (arr.length < n) arr.push("citizen");
+  return arr;
+}
 const KILLERS = ["killerOpen", "killerHidden"];
 // Τρέχων ρόλος: ο Βιαστής μπορεί να έχει αντιγράψει άλλον ρόλο
 const eff = (g, id) => (g && g.copied && g.copied[id]) || (g && g.roles ? g.roles[id] : null);
@@ -505,6 +529,8 @@ onValue(R("players"), snap => { players = snap.val() || {}; gotPlayers = true; r
   err => { $("loadingMsg").textContent = "Σφάλμα βάσης: " + err.message; });
 onValue(R("game"), snap => { game = snap.val(); gotGame = true; render(); },
   err => { $("loadingMsg").textContent = "Σφάλμα βάσης: " + err.message; });
+
+onValue(R("config"), snap => { cfg = snap.val(); if (gotPlayers && gotGame) render(); }, () => {});
 
 // ---- 🟢 Ποιος είναι συνδεδεμένος ----
 let online = {};
@@ -621,6 +647,11 @@ function showLobby(){
     ul.appendChild(li);
   });
   $("countLabel").textContent = `${list.length} (ελάχ. ${MIN_PLAYERS}, μέγ. ${MAX_PLAYERS})`;
+  const deck = rolesForGame(Math.max(list.length, MIN_PLAYERS));
+  const cnt = {}; deck.forEach(x => cnt[x] = (cnt[x] || 0) + 1);
+  $("lobbyRolesText").textContent = ROLE_ORDER.filter(x => cnt[x]).map(x => ROLE_BY_ID[x].name + (cnt[x] > 1 ? " ×" + cnt[x] : "")).join(" · ")
+    + (list.length < MIN_PLAYERS ? ` (για ${MIN_PLAYERS} παίκτες)` : "");
+  $("lobbyRoles").classList.toggle("hidden", !!(game && game.status === "playing"));
 
   renderHost($("hostLobby"));
 }
@@ -862,7 +893,9 @@ function startChat(key, box, dotId){
     const m = snap.val(); if (!m) return;
     if (empty.parentNode) empty.remove();
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-    box.appendChild(makeBubble(m));
+    // Ο Αστυνομικός διαβάζει τα μηνύματα των δολοφόνων χωρίς να βλέπει ποιος τα έστειλε
+    const spyView = key === "killers" && !KILLERS.includes(eff(game, pid));
+    box.appendChild(makeBubble(spyView ? { name: "🔪 Δολοφόνος", text: m.text, ts: m.ts, pid: "?" } : m));
     if (nearBottom || m.pid === pid) scrollBottom(box);
     if (tab !== key && m.pid !== pid) $(dotId).classList.remove("hidden");
   });
@@ -926,12 +959,51 @@ function renderHost(container){
   const playing = game && game.status === "playing";
 
   act("start").classList.toggle("hidden", playing);
-  const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS;
+  const sel = selectedRoles(count);
+  const tooMany = 2 + sel.length > count;
+  const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS && !tooMany;
   act("start").disabled = !ok;
+
+  // Επιλογή ρόλων
+  const rp = el("rolesPick"); rp.textContent = "";
+  if (!playing) {
+    const h = document.createElement("div"); h.className = "meta"; h.style.marginBottom = "6px";
+    const a = document.createElement("span"); a.textContent = "Ρόλοι στο παιχνίδι";
+    const b = document.createElement("span"); b.textContent = (cfg && cfg.custom) ? "δική σου επιλογή" : "αυτόματα";
+    h.append(a, b); rp.appendChild(h);
+    const fixed = document.createElement("p"); fixed.className = "note"; fixed.style.margin = "0 0 8px";
+    fixed.textContent = "Πάντα: Φανερός και Κρυφός Δολοφόνος. Διάλεξε τους ειδικούς ρόλους, οι υπόλοιποι παίκτες γίνονται Πολίτες.";
+    rp.appendChild(fixed);
+    const grid = document.createElement("div"); grid.className = "rolegrid";
+    OPTIONAL.forEach(rid => {
+      const on = sel.includes(rid);
+      const t = document.createElement("button"); t.type = "button"; t.className = "rtog" + (on ? " on" : "");
+      t.textContent = (on ? "✔ " : "") + ROLE_BY_ID[rid].name;
+      t.onclick = () => {
+        const roles = {}; OPTIONAL.forEach(x => roles[x] = sel.includes(x));
+        roles[rid] = !on;
+        set(R("config"), { custom: true, roles });
+      };
+      grid.appendChild(t);
+    });
+    rp.appendChild(grid);
+    const sum = document.createElement("p"); sum.className = "note"; sum.style.margin = "8px 0 0";
+    const cit = count - 2 - sel.length;
+    sum.textContent = `Σύνολο: 2 δολοφόνοι + ${sel.length} ειδικοί + ${Math.max(0, cit)} Πολίτες = ${2 + sel.length + Math.max(0, cit)} ρόλοι για ${count} παίκτες.`
+      + (tooMany ? ` ⚠️ Πολλοί ρόλοι: βγάλε ${2 + sel.length - count}.` : "");
+    rp.appendChild(sum);
+    if (cfg && cfg.custom) {
+      const auto = document.createElement("button"); auto.type = "button"; auto.className = "ghost small"; auto.style.marginTop = "6px";
+      auto.textContent = "Αυτόματη επιλογή ανάλογα με τους παίκτες";
+      auto.onclick = () => remove(R("config"));
+      rp.appendChild(auto);
+    }
+  }
   el("hostMsg").textContent = playing
     ? `Γύρος ${game.round} σε εξέλιξη. Κανείς δεν βλέπει τους ρόλους των άλλων.`
     : count > MAX_PLAYERS ? `Είναι ${count} παίκτες, βγάλε ${count - MAX_PLAYERS} με το ×.`
     : count < MIN_PLAYERS ? `Χρειάζονται ακόμα ${MIN_PLAYERS - count} παίκτες για να ξεκινήσει (${count}/${MIN_PLAYERS}).`
+    : tooMany ? "Διάλεξε λιγότερους ειδικούς ρόλους ή περίμενε κι άλλους παίκτες."
     : `Είστε ${count}. Πάτα όταν είναι όλοι μέσα. Μπορούν να μπουν μέχρι ${MAX_PLAYERS}.`;
   act("newRound").classList.toggle("hidden", !playing);
   el("confirm").classList.toggle("hidden", !pendingConfirm);
@@ -1001,6 +1073,13 @@ function nightStatus(g, A){
     saves[d] = raw && !docBlocked(g, raw, d) ? raw : null;   // όχι τον ίδιο 2 νύχτες, τον εαυτό του μία φορά
   });
   const allSaved = docs.every(d => !!saves[d]);
+  if (g.day === 1) {
+    // Νύχτα 1: μόνο αναγνώριση. Κανείς δεν σκοτώνει, κανείς δεν σώζει.
+    const ready = A.ready || {};
+    const notReady = al.filter(id => !ready[id]);
+    return { intro: true, done: !rapistPending && notReady.length === 0, notReady, ready, target: null, forced: null,
+             saves: {}, docs: [], killers, rapist, rapistPending, killersTurn: false, docTurn: false };
+  }
   const done = !rapistPending && (killers.length === 0 || !!agreed) && allSaved;
   return { done, target: agreed, forced: same ? picks[0] : null, saves, docs, killers, rapist, rapistPending,
            killersTurn: !rapistPending, docTurn: !rapistPending && (killers.length === 0 || !!agreed) };
@@ -1073,6 +1152,7 @@ async function tryResolve(force){
         g.docLast = {}; g.docSelfUsed = g.docSelfUsed || {};
         s.docs.forEach(d => { g.docLast[d] = s.saves[d] || null; if (s.saves[d] === d) g.docSelfUsed[d] = true; });
         const deaths = [];
+        if (s.intro) log("👀 Όλοι έμαθαν τον ρόλο τους.");
         Object.keys(g.pendingDead || {}).forEach(id => { if (!deadIn(g, id)) { g.dead[id] = true; deaths.push(id); } });
         g.pendingDead = null;
         // Ο Μπάτμαν δεν πεθαίνει από τους δολοφόνους
@@ -1090,6 +1170,8 @@ async function tryResolve(force){
         const votesMap = {};
         aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v)) votesMap[id] = v; });
         const outRole = s.out ? eff(g, s.out) : null;
+        const vIds = Object.keys(votesMap);
+        if (vIds.length) log("🗳️ Οι ψήφοι: " + vIds.map(v => nm(v) + (s.mayorDoubled.includes(v) ? " (×2)" : "") + " → " + nm(votesMap[v])).join(", "));
         hist({ k: "day", day: g.day, votes: votesMap, dbl: s.mayorDoubled.length ? s.mayorDoubled : null,
                out: s.out || null, note: outRole === "crazy" ? "crazy" : outRole === "kamikaze" ? "kamikaze" : null });
         if (s.mayorDoubled.length) {
@@ -1203,6 +1285,19 @@ function renderFlow(){
   const aTitle = $("actTitle"), aNote = $("actNote"), box = $("actChoices"), prog = $("actProgress");
   box.textContent = ""; aNote.textContent = ""; prog.textContent = "";
 
+  // 🗳️ Αποτελέσματα της τελευταίας ψηφοφορίας (μετά το κλείσιμό της)
+  const lv = $("lastVote"); lv.textContent = ""; lv.classList.add("hidden");
+  if (g.phase !== "day") {
+    const H = Object.values(g.history || {});
+    const lastDay = H.slice().reverse().find(e => e.k === "day");
+    const lastAny = H[H.length - 1];
+    if (lastDay && lastAny && (lastAny === lastDay || lastAny.k === "kami") && (g.phase === "night" ? g.day === lastDay.day + 1 : true)) {
+      const h = document.createElement("h2"); h.textContent = "🗳️ Αποτελέσματα ψηφοφορίας"; lv.appendChild(h);
+      const blk = historyBlock(lastDay); if (blk) lv.appendChild(blk);
+      lv.classList.remove("hidden");
+    }
+  }
+
   // 🔄 Νέα αναγνώριση μετά τον Βιαστή
   const rb = $("recogBox"); rb.textContent = ""; rb.classList.add("hidden");
   const info = g.rapeInfo;
@@ -1223,7 +1318,51 @@ function renderFlow(){
   }
   $("actionCard").classList.remove("hidden");
 
-  if (g.phase === "night") {
+  if (g.phase === "night" && g.day === 1) {
+    title.textContent = "🌙 Νύχτα 1: Αναγνώριση";
+    sub.textContent = "Ο καθένας μαθαίνει τον ρόλο του. Απόψε δεν σκοτώνει κανείς.";
+    const st = nightStatus(g, A);
+    const iAmReady = !!st.ready[me];
+    const readyBtn = () => {
+      const b = document.createElement("button"); b.type = "button"; b.className = iAmReady ? "ghost big" : "big";
+      b.textContent = iAmReady ? "✔ Είσαι έτοιμος (πάτα για ακύρωση)" : "✔ Είδα τον ρόλο μου";
+      b.onclick = () => doAction("ready", iAmReady ? null : true);
+      return b;
+    };
+    if (dead) {
+      aTitle.textContent = "☠️ Είσαι εκτός παιχνιδιού";
+      aNote.textContent = "Μπορείς να παρακολουθείς, αλλά όχι να παίζεις ή να γράφεις.";
+    } else if (myRole === "rapist" && st.rapistPending) {
+      aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
+      aNote.textContent = "Θα αντιγράψεις τον ρόλο του και θα παίζεις με αυτόν από εδώ και πέρα. Αν διαλέξεις τον Μπάτμαν, πεθαίνεις.";
+      al.filter(id => id !== me).forEach(id =>
+        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = id; renderFlow(); })));
+      const ok = document.createElement("button"); ok.type = "button"; ok.className = "big"; ok.style.marginTop = "6px";
+      ok.textContent = rapePick ? "Επιβεβαίωση: " + nameOf(rapePick) : "Διάλεξε παίκτη";
+      ok.disabled = !rapePick;
+      ok.onclick = () => rapeNow(rapePick);
+      box.appendChild(ok);
+    } else if (st.rapistPending) {
+      aTitle.textContent = "⏳ Περίμενε λίγο";
+      aNote.textContent = "Πρώτα παίζει ο Βιαστής. Μετά θα δεις τον ρόλο σου (και τυχόν νέα αναγνώριση).";
+    } else {
+      if (g.roles[me] === "rapist" && g.rapeInfo) {
+        const info = g.rapeInfo;
+        const d = document.createElement("div"); d.className = "partner";
+        d.textContent = info.result === "batman"
+          ? `🦇 Ο/Η ${nameOf(info.target)} ήταν ο Μπάτμαν, που δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`
+          : `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}: τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
+        box.appendChild(d);
+      }
+      aTitle.textContent = "👀 Μάθε τον ρόλο σου";
+      aNote.textContent = "Πήγαινε στην καρτέλα «Ρόλος» και πάτα την κάρτα. Δες τι είσαι, τι ξέρεις και τι κάνεις. Όταν τελειώσεις, πάτα «Είδα τον ρόλο μου»."
+        + (KILLERS.includes(myRole) ? " Απόψε δεν σκοτώνετε: γνωριστείτε στην καρτέλα 🔪. Θα διαλέξετε θύμα από την επόμενη νύχτα." : "");
+      box.appendChild(readyBtn());
+    }
+    prog.textContent = st.rapistPending ? "Ο Βιαστής διαλέγει…"
+      : st.notReady.length ? `Έτοιμοι ${al.length - st.notReady.length} από ${al.length}. Περιμένουμε: ${st.notReady.map(nameOf).join(", ")}.` : "";
+
+  } else if (g.phase === "night") {
     title.textContent = `🌙 Νύχτα ${g.day}`;
     if (g.roles[me] === "rapist" && g.day === 1 && g.rapeInfo && (KILLERS.includes(myRole) || myRole === "doctor")) {
       prog.textContent = "";
@@ -1309,7 +1448,7 @@ function renderFlow(){
     const mine = (A.vote || {})[me];
     aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
     aNote.textContent = dead ? "Είσαι εκτός παιχνιδιού και δεν ψηφίζεις."
-      : "Πρέπει να ψηφίσεις κάποιον, δεν υπάρχει λευκό. Η ψηφοφορία είναι φανερή και μπορείς να αλλάξεις ψήφο μέχρι να ψηφίσουν όλοι. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
+      : "Πρέπει να ψηφίσεις κάποιον, δεν υπάρχει λευκό. Η ψήφος σου είναι κρυφή μέχρι να ψηφίσουν όλοι, και τότε φαίνεται ποιος ψήφισε ποιον. Μέχρι τότε μπορείς να την αλλάξεις. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
       const n = st.tally[id] || 0;
@@ -1321,14 +1460,14 @@ function renderFlow(){
       return t;
     };
     al.filter(id => id !== me).forEach(id =>
-      box.appendChild(choiceBtn(nameOf(id), mine === id, dead ? () => {} : () => doAction("vote", id), tallyEl(id))));
+      box.appendChild(choiceBtn(nameOf(id), mine === id, dead ? () => {} : () => doAction("vote", id))));
     if (!dead && myRole === "mayor") {
       const on = !!(A.double || {})[me];
       const m = document.createElement("div"); m.className = "partner"; m.style.marginTop = "6px";
       if ((g.mayorUsed || {})[me]) {
         m.textContent = "⭐ Έχεις ήδη χρησιμοποιήσει τη διπλή σου ψήφο σε αυτό το παιχνίδι.";
       } else {
-        m.append("⭐ Διπλή ψήφος Δημάρχου: μπορείς να τη χρησιμοποιήσεις μία φορά σε όλο το παιχνίδι. Όλοι θα δουν ότι ψήφισες διπλά. Ενεργοποίησέ τη πριν ψηφίσεις.");
+        m.append("⭐ Διπλή ψήφος Δημάρχου: μπορείς να τη χρησιμοποιήσεις μία φορά σε όλο το παιχνίδι. Όταν αποκαλυφθούν οι ψήφοι, όλοι θα δουν ότι ψήφισες διπλά. Ενεργοποίησέ τη πριν ψηφίσεις.");
         const b = document.createElement("button"); b.type = "button";
         b.className = on ? "big" : "ghost big"; b.style.marginTop = "10px";
         b.textContent = on ? "⭐ Διπλή ψήφος: ΕΝΕΡΓΗ (πάτα για ακύρωση)" : "⭐ Χρησιμοποίησε τη διπλή ψήφο σήμερα";
@@ -1337,7 +1476,8 @@ function renderFlow(){
       }
       box.appendChild(m);
     }
-    prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}.`;
+    const waiting = al.filter(id => !(A.vote || {})[id]);
+    prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}.` + (waiting.length ? " Περιμένουμε: " + waiting.map(nameOf).join(", ") + "." : "");
 
   } else if (g.phase === "kamikaze") {
     title.textContent = "💥 Καμικάζι";
@@ -1377,6 +1517,7 @@ function renderFlow(){
     if (g.phase === "night") {
       const st2 = nightStatus(g, A);
       if (myRole === "rapist" && st2.rapistPending) myTurn = true;
+      else if (st2.intro) myTurn = !st2.rapistPending && !st2.ready[me];
       else if (KILLERS.includes(myRole) && st2.killersTurn && !st2.target && !(A.kill || {})[me]) myTurn = true;
       else if (myRole === "doctor" && st2.docTurn && !st2.saves[me]) myTurn = true;
     } else if (g.phase === "day") {
@@ -1437,6 +1578,7 @@ function renderFlow(){
       + (offline.length ? " ⚠️ Εκτός σύνδεσης τώρα: " + offline.map(nameOf).join(", ") + "." : "");
     const b = document.createElement("button"); b.className = "ghost big"; b.type = "button";
     b.textContent = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? "⏭ Κλείσε την ψηφοφορία" : "⏭ Προχώρα";
+    if (g.phase === "day") n.textContent += " Προσοχή: οι ψήφοι που λείπουν δεν μετράνε.";
     b.onclick = () => { if (b.dataset.sure) { tryResolve(true); } else { b.dataset.sure = "1"; b.textContent = "Σίγουρα; Πάτα ξανά"; } };
     c.append(n, b); hf.appendChild(c);
   }
@@ -1469,7 +1611,11 @@ function renderHistory(g){
     box.appendChild(p); return;
   }
   const P = (parent, text, cls) => { const p = document.createElement("p"); if (cls) p.className = cls; p.textContent = text; parent.appendChild(p); return p; };
-  H.slice().reverse().forEach(e => {
+  H.slice().reverse().forEach(e => { const b = historyBlock(e); if (b) box.appendChild(b); });
+}
+function historyBlock(e){
+  const P = (parent, text, cls) => { const p = document.createElement("p"); if (cls) p.className = cls; p.textContent = text; parent.appendChild(p); return p; };
+  {
     const b = document.createElement("div");
     if (e.k === "night") {
       b.className = "hblock night";
@@ -1509,9 +1655,9 @@ function renderHistory(g){
       h.textContent = e.k === "kami" ? `💥 Καμικάζι (Μέρα ${e.day})` : `💥 Αυτοκτονία Καμικάζι (${e.phase === "night" ? "Νύχτα" : "Μέρα"} ${e.day})`;
       b.appendChild(h);
       P(b, e.target ? `Ο/Η ${nameOf(e.by)} πήρε μαζί του τον/την ${nameOf(e.target)}.` : `Ο/Η ${nameOf(e.by)} δεν πήρε κανέναν μαζί του.`, "hres");
-    } else return;
-    box.appendChild(b);
-  });
+    } else return null;
+    return b;
+  }
 }
 
 // Οι νεκροί δεν γράφουν πουθενά
@@ -1530,12 +1676,14 @@ async function deal(force){
   const prevRound = (game && game.round) || 0;
   const res = await runTransaction(R("game"), cur => {
     if (!force && cur && cur.status === "playing") return;      // κάποιος άλλος πρόλαβε
-    const picked = shuffle(rolesFor(ids.length));
+    const deck = rolesForGame(ids.length);
+    if (deck.length !== ids.length) return;                     // περισσότεροι ρόλοι από παίκτες
+    const picked = shuffle(deck);
     const roles = {};
     ids.forEach((id, i) => roles[id] = picked[i]);
     return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles,
              phase: "night", day: 1, dead: {},
-             log: [{ t: "🌙 Πέφτει η πρώτη νύχτα. Οι δολοφόνοι διαλέγουν θύμα, ο Γιατρός ποιον θα προστατέψει.", ts: Date.now() }] };
+             log: [{ t: "🌙 Πέφτει η πρώτη νύχτα: ο καθένας μαθαίνει τον ρόλο του. Απόψε δεν σκοτώνει κανείς.", ts: Date.now() }] };
   });
   if (res.committed && prevRound) remove(R("chat/" + prevRound)).catch(() => {});
 }
