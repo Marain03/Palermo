@@ -250,7 +250,7 @@
         <h3>Ρόλοι σε αυτό το παιχνίδι</h3>
         <p id="inPlay"></p>
         <h3>Η ροή</h3>
-        <p><b>Νύχτα:</b> όλοι κλείνουν τα μάτια. Οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν και ο Γιατρός ποιον θα προστατέψει.</p>
+        <p><b>Νύχτα:</b> όλοι κλείνουν τα μάτια. Πρώτα οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν, μετά ο Γιατρός διαλέγει ποιον θα προστατέψει (χωρίς να ξέρει το θύμα), και μετά ξημερώνει.</p>
         <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Αν βγει ισοπαλία, δεν βγαίνει κανείς.</p>
         <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
         <h3>Ποιος κερδίζει</h3>
@@ -376,7 +376,7 @@ const ROLE_BY_ID = {
   },
   doctor: {
     name:"Γιατρός", team:"Πόλη",
-    does:"Κάθε νύχτα διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Αν οι δολοφόνοι διαλέξουν τον ίδιο, δεν πεθαίνει.",
+    does:"Κάθε νύχτα, αφού διαλέξουν οι δολοφόνοι, έρχεται η σειρά σου: διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Δεν ξέρεις ποιον διάλεξαν. Αν πέσεις μέσα, ο παίκτης δεν πεθαίνει. Μόλις διαλέξεις, ξημερώνει.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
     tips:["Προστάτεψε όποιον φαίνεται ότι ξέρει κάτι (πιθανός Αστυνομικός ή Πουτάνα). Αυτούς θα κυνηγήσουν οι δολοφόνοι.","Αν σώσεις κάποιον, μην το πεις αμέσως, γιατί θα αποκαλυφθείς.","Δεν μπορείς να σώσεις τον ίδιο παίκτη δύο νύχτες στη σειρά.","Τον εαυτό σου μπορείς να τον σώσεις μόνο μία φορά σε όλο το παιχνίδι. Κράτα τη για όταν κινδυνεύεις."]
   },
@@ -1033,7 +1033,8 @@ function renderFlow(){
   card.className = "card phasecard " + (g.phase === "night" ? "night" : g.phase === "ended" ? "ended" : "day");
 
   // Νέα φάση → κόκκινη τελεία αν είσαι σε άλλη καρτέλα
-  const pk = g.round + ":" + g.phase + ":" + g.day;
+  const docTurn = g.phase === "night" && myRole === "doctor" && !!nightStatus(g, A).target;
+  const pk = g.round + ":" + g.phase + ":" + g.day + (docTurn ? ":doc" : "");
   if (lastPhaseSeen && lastPhaseSeen !== pk && tab !== "flow") $("dotFlow").classList.remove("hidden");
   lastPhaseSeen = pk;
 
@@ -1062,9 +1063,20 @@ function renderFlow(){
         const b = document.createElement("b"); b.textContent = pk ? nameOf(pk) : "δεν έχει διαλέξει ακόμα"; d.appendChild(b);
         box.appendChild(d);
       });
-      al.filter(id => !KILLERS.includes(g.roles[id])).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kill", id))));
-      prog.textContent = st.target ? "✔ Συμφωνήσατε." : "";
+      if (st.target) {
+        box.textContent = "";
+        const d = document.createElement("div"); d.className = "partner";
+        d.append("✔ Συμφωνήσατε: ");
+        const b = document.createElement("b"); b.textContent = nameOf(st.target); d.appendChild(b);
+        box.appendChild(d);
+        prog.textContent = "Τώρα είναι η σειρά του Γιατρού. Μετά ξημερώνει.";
+      } else {
+        al.filter(id => !KILLERS.includes(g.roles[id])).forEach(id =>
+          box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kill", id))));
+      }
+    } else if (myRole === "doctor" && !st.target && st.killers.length) {
+      aTitle.textContent = "😴 Περίμενε τη σειρά σου";
+      aNote.textContent = "Πρώτα διαλέγουν οι δολοφόνοι. Μόλις τελειώσουν, θα σου ζητηθεί να διαλέξεις ποιον θα σώσεις.";
     } else if (myRole === "doctor") {
       aTitle.textContent = "💉 Ποιον θα προστατέψεις απόψε;";
       aNote.textContent = "Αν οι δολοφόνοι διαλέξουν αυτόν τον παίκτη, δεν θα πεθάνει.";
@@ -1080,7 +1092,7 @@ function renderFlow(){
       aTitle.textContent = "😴 Κοιμάσαι";
       aNote.textContent = "Περίμενε να ξημερώσει. Θα δεις εδώ τι έγινε τη νύχτα.";
     }
-    if (!st.done) prog.textContent = prog.textContent || "Περιμένουμε τις κινήσεις της νύχτας…";
+    if (!st.done) prog.textContent = prog.textContent || (!st.target && st.killers.length ? "🔪 Οι δολοφόνοι διαλέγουν θύμα…" : "💉 Σχεδόν ξημερώνει…");
 
   } else if (g.phase === "day") {
     title.textContent = `☀️ Μέρα ${g.day}`;
