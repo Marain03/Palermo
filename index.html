@@ -81,6 +81,7 @@
   button.small{padding:8px 12px;font-size:13px}
   .msg{color:var(--wine);font-size:14px;min-height:18px;margin-top:8px}
   .note{color:var(--muted);font-size:14px;line-height:1.5}
+  .note:empty,.phasecard .note:empty{display:none}
   .center{text-align:center}
   .hidden{display:none!important}
   ul{list-style:none;margin:0;padding:0}
@@ -381,15 +382,14 @@
   <div class="pane hidden" data-pane="role" style="overflow-y:auto">
     <div class="rolecard closed" id="roleCard">
       <div id="roleClosed">
-        <div class="rolelabel">Ο ρόλος σου</div>
-        <div class="rolename">Πάτα για να τον δεις</div>
-        <div class="tapnote">Βεβαιώσου ότι δεν κοιτάει κανείς.</div>
+        <div class="rolename">Ο ρόλος σου</div>
+        <div class="tapnote">Πάτα για να τον δεις</div>
       </div>
       <div id="roleOpen" class="hidden">
         <div class="rolelabel" id="roleFor"></div>
         <div class="rolename" id="roleName"></div>
         <div class="intel" id="roleIntel"></div>
-        <div class="tapnote">Από κάτω εξηγείται αναλυτικά ο ρόλος σου. Πάτα ξανά την κάρτα για να κρυφτούν όλα.</div>
+        <div class="tapnote">Πάτα για να κρυφτεί</div>
       </div>
     </div>
     <div id="roleGuide" class="card guide hidden" style="margin-top:14px"></div>
@@ -754,7 +754,7 @@ function showLobby(){
   $("inProgressCard").classList.toggle("hidden", !(playing && !joined));
   if (joined) { $("myName").textContent = players[pid].name; const m = $("avMine"); m.textContent = ""; const a = avatarEl(pid, "lg"); m.replaceWith(a); a.id = "avMine"; }
   if (joined && playing) $("waitNote").textContent = "Το παιχνίδι ξεκίνησε χωρίς εσένα. Περίμενε τον επόμενο γύρο.";
-  else $("waitNote").textContent = `Είμαστε ${list.length}. Χρειάζονται τουλάχιστον ${MIN_PLAYERS} παίκτες (μέχρι ${MAX_PLAYERS}). Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.`;
+  else $("waitNote").textContent = list.length < MIN_PLAYERS ? `Χρειάζονται τουλάχιστον ${MIN_PLAYERS} παίκτες.` : "Περιμένουμε τον host να ξεκινήσει.";
 
   const full = list.length >= MAX_PLAYERS;
   $("nameInput").disabled = full;
@@ -1490,9 +1490,7 @@ function phaseSummary(g, fromPk){
     const box = el("div");
     box.appendChild(el("div", "mi", "🌅"));
     box.appendChild(el("div", "mt", "Ξημέρωσε"));
-    if (g.day === 1) box.appendChild(el("p", "mp c", "Όλοι ξέρουν πλέον τον ρόλο τους."));
     if (died.length || g.day > 1) box.appendChild(el("p", "mp c", died.length ? (died.length > 1 ? "Τη νύχτα πέθαναν: " : "Τη νύχτα πέθανε: ") + died.map(nameOf).join(", ") : "Κανείς δεν πέθανε απόψε!"));
-    box.appendChild(el("p", "ms", `☀️ Μέρα ${g.day}: συζητήστε και ψηφίστε ποιον θα βγάλετε.`));
     nodes.push(box);
     return { nodes, btn: "Πάμε στην ψηφοφορία" };
   }
@@ -1605,13 +1603,11 @@ function renderModals(g, A){
     } else {
       btns.appendChild(mbtn("✔ Είδα τον ρόλο μου", () => { doAction("ready", true); closeModal(); setTab("flow"); }));
     }
-    btns.appendChild(el("p", "note", "Μπορείς να ξαναδείς τον ρόλο σου όποτε θέλεις στην καρτέλα «Ρόλος»."));
   } else if (modal.type === "death") {
     const [icon, text] = deathCause(g);
     body.appendChild(el("div", "mi", "☠️"));
     body.appendChild(el("div", "mt", "Πέθανες"));
     body.appendChild(el("p", "mp c", icon + " " + text));
-    body.appendChild(el("p", "ms", "Μπορείς να συνεχίσεις να παρακολουθείς το παιχνίδι, αλλά δεν ψηφίζεις, δεν γράφεις και δεν αποκαλύπτεις τίποτα στους άλλους."));
     btns.appendChild(mbtn("Εντάξει", () => { markDeathSeen(); closeModal(); setTab("flow"); renderFlow(); }));
   } else if (modal.type === "phase") {
     modal.data.nodes.forEach(n => body.appendChild(n));
@@ -1678,7 +1674,7 @@ function renderFlow(){
 
   if (g.phase === "night" && g.day === 1) {
     title.textContent = "🌙 Νύχτα 1: Αναγνώριση";
-    sub.textContent = "Ο καθένας μαθαίνει τον ρόλο του. Απόψε δεν σκοτώνει κανείς.";
+    sub.textContent = "";
     const st = nightStatus(g, A);
     const iAmReady = !!st.ready[me];
     const readyBtn = () => {
@@ -1689,10 +1685,10 @@ function renderFlow(){
     };
     if (dead) {
       aTitle.textContent = "☠️ Είσαι εκτός παιχνιδιού";
-      aNote.textContent = "Μπορείς να παρακολουθείς, αλλά όχι να παίζεις ή να γράφεις.";
+      aNote.textContent = "";
     } else if (myRole === "rapist" && st.rapistPending) {
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
-      aNote.textContent = "Θα αντιγράψεις τον ρόλο του και θα παίζεις με αυτόν από εδώ και πέρα. Αν διαλέξεις τον Μπάτμαν, πεθαίνεις.";
+      aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
         box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = id; renderFlow(); })));
       const ok = document.createElement("button"); ok.type = "button"; ok.className = "big"; ok.style.marginTop = "6px";
@@ -1702,7 +1698,7 @@ function renderFlow(){
       box.appendChild(ok);
     } else if (st.rapistPending) {
       aTitle.textContent = "⏳ Περίμενε λίγο";
-      aNote.textContent = "Πρώτα παίζει ο Βιαστής. Μετά θα δεις τον ρόλο σου (και τυχόν νέα αναγνώριση).";
+      aNote.textContent = "";
     } else {
       if (g.roles[me] === "rapist" && g.rapeInfo) {
         const info = g.rapeInfo;
@@ -1713,8 +1709,7 @@ function renderFlow(){
         box.appendChild(d);
       }
       aTitle.textContent = "👀 Μάθε τον ρόλο σου";
-      aNote.textContent = st.ready[me] ? "Περιμένουμε να δουν όλοι τον ρόλο τους. Μετά ξημερώνει."
-        : "Δες τον ρόλο σου (και στην καρτέλα «Ρόλος»). Όταν τελειώσεις, πάτα «Είδα τον ρόλο μου»."
+      aNote.textContent = st.ready[me] ? "Περιμένουμε τους υπόλοιπους." : ""
         + (KILLERS.includes(myRole) ? " Απόψε δεν σκοτώνετε: γνωριστείτε στην καρτέλα 🔪. Θα διαλέξετε θύμα από την επόμενη νύχτα." : "");
       box.appendChild(readyBtn());
     }
@@ -1729,14 +1724,14 @@ function renderFlow(){
       d.textContent = `Αντέγραψες τον ρόλο του/της ${nameOf(g.rapeInfo.target)}: τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
       box.appendChild(d);
     }
-    sub.textContent = "Η πόλη κοιμάται. Οι δολοφόνοι διαλέγουν θύμα.";
+    sub.textContent = "";
     const st = nightStatus(g, A);
     if (dead) {
       aTitle.textContent = "☠️ Είσαι εκτός παιχνιδιού";
-      aNote.textContent = "Μπορείς να παρακολουθείς, αλλά όχι να παίζεις ή να γράφεις.";
+      aNote.textContent = "";
     } else if (myRole === "rapist" && st.rapistPending) {
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
-      aNote.textContent = "Θα αντιγράψεις τον ρόλο του και θα παίζεις με αυτόν από εδώ και πέρα. Αν διαλέξεις τον Μπάτμαν, πεθαίνεις.";
+      aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
         box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = id; renderFlow(); })));
       const ok = document.createElement("button"); ok.type = "button"; ok.className = "big"; ok.style.marginTop = "6px";
@@ -1751,16 +1746,16 @@ function renderFlow(){
         aNote.textContent = `Ο/Η ${nameOf(info.target)} ήταν ο Μπάτμαν, που δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`;
       } else {
         aTitle.textContent = "Ο νέος σου ρόλος: " + ROLE_BY_ID[info.result].name;
-        aNote.textContent = `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}. Δες την καρτέλα «Ρόλος» για να μάθεις τι κάνεις τώρα.`;
+        aNote.textContent = `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}. `;
       }
     } else if (KILLERS.includes(myRole) && st.rapistPending) {
       aTitle.textContent = "⏳ Περιμένετε";
-      aNote.textContent = "Πρώτα παίζει ο Βιαστής (μπορεί να γίνει κι αυτός δολοφόνος). Μετά θα διαλέξετε θύμα.";
+      aNote.textContent = "Πρώτα παίζει ο Βιαστής.";
     } else if (KILLERS.includes(myRole)) {
       aTitle.textContent = "🔪 Διάλεξε θύμα";
       aNote.textContent = st.killers.length > 1
-        ? "Πρέπει να διαλέξετε και οι δύο τον ίδιο παίκτη. Συνεννοηθείτε στην καρτέλα 🔪."
-        : "Διάλεξε ποιον θα σκοτώσεις απόψε.";
+        ? "Πρέπει να συμφωνήσετε στο ίδιο άτομο."
+        : "";
       const mine = (A.kill || {})[me];
       st.killers.filter(id => id !== me).forEach(o => {
         const pk = (A.kill || {})[o];
@@ -1782,13 +1777,11 @@ function renderFlow(){
       }
     } else if (myRole === "doctor" && !st.docTurn) {
       aTitle.textContent = "😴 Περίμενε τη σειρά σου";
-      aNote.textContent = "Πρώτα παίζουν οι δολοφόνοι" + (st.rapistPending ? " (και πριν από αυτούς ο Βιαστής)" : "") + ". Μόλις τελειώσουν, θα σου ζητηθεί να διαλέξεις ποιον θα σώσεις.";
+      aNote.textContent = "";
     } else if (myRole === "doctor") {
       aTitle.textContent = "💉 Ποιον θα προστατέψεις απόψε;";
-      aNote.textContent = "Αν οι δολοφόνοι διαλέξουν αυτόν τον παίκτη, δεν θα πεθάνει.";
+      aNote.textContent = "";
       const mine = (A.save || {})[me];
-      aNote.textContent += " Δεν μπορείς να σώσεις τον ίδιο παίκτη δύο νύχτες στη σειρά, και τον εαυτό σου μόνο μία φορά σε όλο το παιχνίδι."
-        + ((g.docSelfUsed || {})[me] ? " (Έχεις ήδη σώσει τον εαυτό σου.)" : "");
       al.forEach(id => {
         const why = docBlocked(g, id, me);
         box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : "") + (why ? " · " + why : ""),
@@ -1796,19 +1789,17 @@ function renderFlow(){
       });
     } else {
       aTitle.textContent = "😴 Κοιμάσαι";
-      aNote.textContent = "Περίμενε να ξημερώσει. Θα δεις εδώ τι έγινε τη νύχτα.";
+      aNote.textContent = "";
     }
     if (!st.done) prog.textContent = prog.textContent || (st.rapistPending ? "Ο Βιαστής διαλέγει…" : !st.target && st.killers.length ? "🔪 Οι δολοφόνοι διαλέγουν θύμα…" : "💉 Σχεδόν ξημερώνει…");
 
   } else if (g.phase === "day") {
     title.textContent = `☀️ Μέρα ${g.day}`;
-    sub.textContent = "Συζητήστε από κοντά και ψηφίστε ποιον θα βγάλετε από το παιχνίδι.";
+    sub.textContent = "";
     const st = dayStatus(g, A);
     const mine = (A.vote || {})[me];
     aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
-    aNote.textContent = dead ? "Είσαι εκτός παιχνιδιού και δεν ψηφίζεις."
-      : mine ? "Η ψήφος σου είναι οριστική και κρυφή. Όταν ψηφίσουν όλοι, θα φανεί ποιος ψήφισε ποιον."
-      : "Διάλεξε ποιον θα βγάλετε και επιβεβαίωσε. Η ψήφος είναι οριστική και κρυφή μέχρι να ψηφίσουν όλοι. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
+    aNote.textContent = "";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
       const n = st.tally[id] || 0;
@@ -1843,8 +1834,7 @@ function renderFlow(){
         const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.title = "Όχι";
         no.setAttribute("aria-label", "Όχι, ακύρωση");
         no.onclick = () => { votePick = null; renderFlow(); };
-        const sm = document.createElement("div"); sm.className = "note"; sm.style.flexBasis = "100%"; sm.textContent = "Μετά δεν αλλάζει.";
-        c.append(q, no, yes, sm);
+        c.append(q, no, yes);
         box.appendChild(c);
       }
     }
@@ -1854,7 +1844,7 @@ function renderFlow(){
       if ((g.mayorUsed || {})[me]) {
         m.textContent = "⭐ Έχεις ήδη χρησιμοποιήσει τη διπλή σου ψήφο σε αυτό το παιχνίδι.";
       } else {
-        m.append("⭐ Διπλή ψήφος Δημάρχου: μπορείς να τη χρησιμοποιήσεις μία φορά σε όλο το παιχνίδι. Όταν αποκαλυφθούν οι ψήφοι, όλοι θα δουν ότι ψήφισες διπλά. Ενεργοποίησέ τη πριν ψηφίσεις.");
+        m.append("⭐ Διπλή ψήφος (μία φορά στο παιχνίδι)");
         const b = document.createElement("button"); b.type = "button";
         b.className = on ? "big" : "ghost big"; b.style.marginTop = "10px";
         b.textContent = on ? "⭐ Διπλή ψήφος: ΕΝΕΡΓΗ (πάτα για ακύρωση)" : "⭐ Χρησιμοποίησε τη διπλή ψήφο σήμερα";
@@ -1864,14 +1854,14 @@ function renderFlow(){
       box.appendChild(m);
     }
     const waiting = al.filter(id => !(A.vote || {})[id]);
-    prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}.` + (waiting.length ? " Περιμένουμε: " + waiting.map(nameOf).join(", ") + "." : "");
+    prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}`;
 
   } else if (g.phase === "kamikaze") {
     title.textContent = "💥 Καμικάζι";
     sub.textContent = `Ο/Η ${nameOf(g.kami)} ήταν ο Καμικάζι και διαλέγει ποιον θα πάρει μαζί του.`;
     if (me === g.kami) {
       aTitle.textContent = "💥 Ποιον παίρνεις μαζί σου;";
-      aNote.textContent = "Ο παίκτης που θα διαλέξεις βγαίνει κι αυτός από το παιχνίδι.";
+      aNote.textContent = "";
       const mine = (A.kami || {})[me];
       al.forEach(id => box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kami", id))));
     } else {
@@ -1895,7 +1885,7 @@ function renderFlow(){
       li.append(a, b); ul.appendChild(li);
     });
     box.appendChild(ul);
-    aNote.textContent = amHost() ? "Πάτα «Νέος γύρος» από κάτω για να ξαναπαίξετε." : "Ο host μπορεί να ξεκινήσει νέο γύρο.";
+    aNote.textContent = "";
   }
 
   // 🔔 Είναι η σειρά μου;
@@ -1961,11 +1951,10 @@ function renderFlow(){
   if (amHost() && g.phase !== "ended") {
     const c = document.createElement("div"); c.className = "card host";
     const n = document.createElement("p"); n.className = "note"; n.style.margin = "0 0 10px";
-    n.textContent = "Host: αν κάποιος αργεί ή λείπει, μπορείς να προχωρήσεις τη φάση με όσες κινήσεις/ψήφους έχουν γίνει."
+    n.textContent = "Αν κάποιος αργεί:"
       + (offline.length ? " ⚠️ Εκτός σύνδεσης τώρα: " + offline.map(nameOf).join(", ") + "." : "");
     const b = document.createElement("button"); b.className = "ghost big"; b.type = "button";
     b.textContent = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? "⏭ Κλείσε την ψηφοφορία" : "⏭ Προχώρα";
-    if (g.phase === "day") n.textContent += " Προσοχή: οι ψήφοι που λείπουν δεν μετράνε.";
     b.onclick = () => { if (b.dataset.sure) { tryResolve(true); } else { b.dataset.sure = "1"; b.textContent = "Σίγουρα; Πάτα ξανά"; } };
     c.append(n, b); hf.appendChild(c);
   }
