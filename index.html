@@ -509,7 +509,7 @@
         <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
         <h3>Ποιος κερδίζει</h3>
         <p><b>Η Πόλη:</b> όταν βγουν όλοι οι δολοφόνοι.</p>
-        <p><b>Οι Δολοφόνοι (και η Πουτάνα):</b> όταν οι δολοφόνοι μαζί με την Πουτάνα μείνουν όσοι και οι υπόλοιποι ζωντανοί παίκτες.</p>
+        <p><b>Οι Δολοφόνοι (και η Πουτάνα):</b> όταν οι δολοφόνοι μείνουν όσοι και οι υπόλοιποι ζωντανοί παίκτες. Εξαίρεση: αν είναι ακριβώς όσοι και ζει Δήμαρχος που δεν έχει χρησιμοποιήσει τη διπλή του ψήφο, το παιχνίδι συνεχίζεται.</p>
         <p><b>Η Τρέλα:</b> αν την ψηφίσουν να βγει.</p>
         <p><b>Ο Βιαστής:</b> κερδίζει με την ομάδα του ρόλου που αντέγραψε.</p>
         <h3>Ποιος ξέρει τι</h3>
@@ -658,7 +658,7 @@ const ROLE_BY_ID = {
   whore: {
     name:"Πουτάνα", team:"Δολοφόνοι",
     does:"Είσαι με τους δολοφόνους. Ξέρεις από την αρχή ποιοι είναι, αλλά εκείνοι δεν ξέρουν εσένα. Δεν σκοτώνεις. Τη μέρα τους καλύπτεις και σπρώχνεις την Πόλη να βγάζει αθώους.",
-    goal:"Να κερδίσουν οι δολοφόνοι: εσύ μαζί τους να μείνετε όσοι και οι υπόλοιποι.",
+    goal:"Να κερδίσουν οι δολοφόνοι.",
     tips:["Υπερασπίσου τους δολοφόνους, αλλά όχι τόσο φανερά που να σε καταλάβουν.","Ρίξε υποψίες σε αθώους, κυρίως σε όποιον μοιάζει να είναι ο Αστυνομικός.","Οι δολοφόνοι δεν ξέρουν ότι είσαι μαζί τους και μπορεί να σε σκοτώσουν κι εσένα."]
   },
   doctor: {
@@ -1569,7 +1569,7 @@ function renderHost(container){
   act("start").classList.toggle("hidden", playing);
   const deckNow = rolesForGame(count).filter(x => x !== "citizen");
   const tooMany = deckNow.length > count;
-  const badN = deckNow.filter(x => ROLE_BY_ID[x].team === "Δολοφόνοι").length;
+  const badN = deckNow.filter(x => KILLERS.includes(x)).length;
   const tooBad = !tooMany && count >= MIN_PLAYERS && badN * 2 >= count;     // οι κακοί δεν πρέπει να είναι οι μισοί από την αρχή
   const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS && !tooMany && !tooBad;
   act("start").disabled = !ok;
@@ -1612,7 +1612,7 @@ function renderHost(container){
     const cit = count - deckNow.length;
     sum.textContent = `Σύνολο: ${kill} δολοφόνοι + ${special} ειδικοί + ${Math.max(0, cit)} Πολίτες = ${deckNow.length + Math.max(0, cit)} ρόλοι για ${count} παίκτες.`
       + (tooMany ? ` ⚠️ Πολλοί ρόλοι: βγάλε ${deckNow.length - count}.` : "")
-      + (tooBad ? ` ⚠️ Οι κακοί (δολοφόνοι και Πουτάνα) είναι ${badN} στους ${count}: πρέπει να είναι λιγότεροι από τους μισούς.` : "");
+      + (tooBad ? ` ⚠️ Οι δολοφόνοι είναι ${badN} στους ${count}: πρέπει να είναι λιγότεροι από τους μισούς.` : "");
     rp.appendChild(sum);
     if (cfg && cfg.custom) {
       const auto = document.createElement("button"); auto.type = "button"; auto.className = "ghost small"; auto.style.marginTop = "6px";
@@ -1626,7 +1626,7 @@ function renderHost(container){
     : count > MAX_PLAYERS ? `Είναι ${count} παίκτες, βγάλε ${count - MAX_PLAYERS} με το ×.`
     : count < MIN_PLAYERS ? `Χρειάζονται ακόμα ${MIN_PLAYERS - count} παίκτες για να ξεκινήσει (${count}/${MIN_PLAYERS}).`
     : tooMany ? "Διάλεξε λιγότερους ειδικούς ρόλους ή περίμενε κι άλλους παίκτες."
-    : tooBad ? "Βγάλε κάποιον δολοφόνο ή την Πουτάνα, ή περίμενε κι άλλους παίκτες."
+    : tooBad ? "Βγάλε κάποιον δολοφόνο ή περίμενε κι άλλους παίκτες."
     : `Είστε ${count}. Πάτα όταν είναι όλοι μέσα. Μπορούν να μπουν μέχρι ${MAX_PLAYERS}.`;
   act("newRound").classList.toggle("hidden", !playing);
   el("confirm").classList.toggle("hidden", !pendingConfirm);
@@ -1742,10 +1742,11 @@ function kamiStatus(g, A){
 function checkWin(g, log){
   const al = aliveIn(g);
   const k = al.filter(id => KILLERS.includes(eff(g, id))).length;
-  const bad = al.filter(id => ROLE_BY_ID[eff(g, id)].team === "Δολοφόνοι").length;   // δολοφόνοι + Πουτάνα
-  const others = al.length - bad;
+  const others = al.length - k;
+  // Με ισοπαλία αριθμών, ο Δήμαρχος με αχρησιμοποίητη διπλή ψήφο μπορεί ακόμα να γυρίσει το παιχνίδι
+  const mayorUp = k === others && al.some(id => eff(g, id) === "mayor" && !(g.mayorUsed || {})[id]);
   if (k === 0) { g.phase = "ended"; g.winner = "town"; log("🏆 Κέρδισε η Πόλη! Βγήκαν όλοι οι δολοφόνοι."); return true; }
-  if (bad >= others) { g.phase = "ended"; g.winner = "killers"; log("🏆 Κέρδισαν οι Δολοφόνοι! Έμειναν όσοι και οι υπόλοιποι."); return true; }
+  if (k >= others && !mayorUp) { g.phase = "ended"; g.winner = "killers"; log("🏆 Κέρδισαν οι Δολοφόνοι! Έμειναν όσοι και οι υπόλοιποι."); return true; }
   return false;
 }
 // 💔 Όταν πεθαίνει ένας Ερωτευμένος, πεθαίνει και ο άλλος
