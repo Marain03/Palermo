@@ -87,8 +87,10 @@
   .note:empty,.phasecard .note:empty{display:none}
   .center{text-align:center}
   #codeInput::placeholder{text-transform:none;letter-spacing:normal;font-weight:400}
+  #joinMsg:empty{display:none}
+  .backbtn{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;font-size:20px}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .roomcode{font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
+  .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
   ul{list-style:none;margin:0;padding:0}
   .players li{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
@@ -365,6 +367,7 @@
 
 <!-- Join + lobby -->
 <div class="wrap hidden" id="lobby">
+  <button type="button" class="iconbtn backbtn" id="backBtn" aria-label="Αρχική σελίδα">←</button>
   <div class="lobbytop">
     <button type="button" class="iconbtn hidden" id="hostBtnLobby" aria-label="Πάνελ host">👑</button>
     <button type="button" class="iconbtn" id="setBtnLobby" aria-label="Ρυθμίσεις">⚙️</button>
@@ -376,14 +379,10 @@
       <div class="note" style="margin:0">Κωδικός παιχνιδιού</div>
       <div class="roomcode" id="roomCode"></div>
     </div>
-    <div class="avbtns">
-      <button type="button" class="ghost small" id="shareBtn">Στείλε</button>
-      <button type="button" class="ghost small" id="otherRoomBtn">Άλλο τραπέζι</button>
-    </div>
+    <button type="button" class="ghost small" id="copyBtn">Αντιγραφή</button>
   </div>
 
   <div class="card" id="joinCard">
-    <h2>Μπες στο τραπέζι</h2>
     <form id="joinForm" class="row" autocomplete="off">
       <input id="nameInput" maxlength="20" placeholder="Το username σου">
       <button type="submit" id="joinBtn">Μπαίνω</button>
@@ -800,14 +799,15 @@ if (!TEST) { try { localStorage.setItem("palermo.room", ROOM); } catch (e) {} }
 const R = path => roomRef(ROOM, path);
 const ROOM_LINK = () => location.origin + location.pathname + "?t=" + ROOM;
 $("roomCode").textContent = ROOM;
-$("shareBtn").onclick = async () => {
-  const text = "Έλα να παίξουμε Παλέρμο! Κωδικός: " + ROOM;
-  try {
-    if (navigator.share) { await navigator.share({ title: "Palermo", text, url: ROOM_LINK() }); return; }
-  } catch (e) { if (e && e.name === "AbortError") return; }
-  try { await navigator.clipboard.writeText(text + "\n" + ROOM_LINK()); $("shareBtn").textContent = "Αντιγράφηκε ✓"; setTimeout(() => { $("shareBtn").textContent = "Στείλε"; }, 1800); } catch (e) {}
+$("copyBtn").onclick = async () => {
+  let ok = false;
+  try { await navigator.clipboard.writeText(ROOM); ok = true; } catch (e) {
+    try { const t = document.createElement("textarea"); t.value = ROOM; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch (e2) {}
+  }
+  if (ok) { $("copyBtn").textContent = "Αντιγράφηκε ✓"; setTimeout(() => { $("copyBtn").textContent = "Αντιγραφή"; }, 1800); }
 };
-$("otherRoomBtn").onclick = async () => {
+$("roomCode").onclick = () => $("copyBtn").click();
+$("backBtn").onclick = async () => {
   if (players[pid] && !(game && game.status === "playing")) { try { await remove(R("players/" + pid)); } catch (e) {} }
   goHome();
 };
