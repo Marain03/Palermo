@@ -16,17 +16,18 @@
     --head:#EBB64B;            /* τίτλοι */
     --accent:#EBB64B; --accent-ink:#241803; --accent-hover:#F3C766;
     --wine:#C2414F; --wine-soft:#3A1D30; --ok:#6FB07A;
-    --paper:#F4EBD8; --paper-ink:#2A2016; --paper-line:#D8C6A2; --paper-wine:#7E1F2C;
+    /* Η κάρτα του ρόλου: μπλε της θάλασσας με χρυσό */
+    --card-a:#22649A; --card-b:#163F66; --card-ink:#F2F6FA; --card-line:#3F7DB0; --card-hi:#F2C766; --card-muted:#B7CDE2;
     --serif:"GFS Didot", "Noto Serif", Georgia, serif;
     --sans:Commissioner, system-ui, -apple-system, "Segoe UI", sans-serif;
     --r:14px;
   }
   body.is-day{
-    --bg:#E9D9BC; --bg2:#E2CFAE; --panel:#F5ECDB; --raise:#FCF6EA; --line:#D3BE98;
-    --text:#2A2016; --muted:#76664F; --field:#FFFBF3;
+    --bg:#DCE8F2; --bg2:#D0DFEC; --panel:#F3F8FC; --raise:#FFFFFF; --line:#BCD0E1;
+    --text:#13283C; --muted:#56708A; --field:#FFFFFF;
     --head:#1E5B86;
     --accent:#1E5B86; --accent-ink:#FFFFFF; --accent-hover:#25709F;
-    --wine:#A3283A; --wine-soft:#F2DAD6; --ok:#3D8A4B;
+    --wine:#B02C40; --wine-soft:#F6DDE0; --ok:#2F8A55;
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);
@@ -48,8 +49,8 @@
     opacity:1}
   body::after{
     background:
-      radial-gradient(520px 360px at 12% -8%, rgba(255,214,140,.55), transparent 70%),
-      linear-gradient(180deg, #EFE2C8 0%, var(--bg) 60%);
+      radial-gradient(480px 340px at 14% -8%, rgba(255,236,170,.75), transparent 70%),
+      linear-gradient(180deg, #EAF2F9 0%, var(--bg) 60%);
     opacity:0}
   body.is-day::before{opacity:0}
   body.is-day::after{opacity:1}
@@ -92,6 +93,16 @@
   .x{background:none;color:var(--muted);padding:6px 10px;font-size:18px}
   .x:hover{background:none;color:var(--wine)}
   .meta{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;margin-bottom:8px}
+  .av{width:30px;height:30px;border-radius:50%;background:var(--raise);display:inline-grid;place-items:center;flex:none;overflow:hidden;
+    font-family:var(--serif);font-size:15px;color:var(--head);border:1px solid var(--line)}
+  .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .av.lg{width:64px;height:64px;font-size:26px}
+  .choice .lbl{display:flex;align-items:center;gap:10px;min-width:0}
+  .choice .av{width:28px;height:28px;font-size:13px}
+  .dead .av{filter:grayscale(1);opacity:.55}
+  .avpick{display:flex;align-items:center;gap:14px;margin-bottom:12px;cursor:pointer;background:none;border:0;padding:0;color:var(--text);font-weight:500;text-align:left}
+  .avpick:hover{background:none}
+  .avpick .av{border-style:dashed}
   .badge{display:inline-block;background:var(--head);color:var(--bg);font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px}
 
   /* ---------- Οθόνη παιχνιδιού ---------- */
@@ -113,34 +124,34 @@
 
   /* ---------- Το τραπουλόχαρτο του ρόλου ---------- */
   .rolecard{position:relative;overflow:hidden;border-radius:18px;padding:40px 24px 70px;text-align:center;cursor:pointer;user-select:none;
-    background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);
-    box-shadow:0 14px 34px rgba(0,0,0,.35)}
+    background:linear-gradient(160deg,var(--card-a),var(--card-b));color:var(--card-ink);border:1px solid var(--card-line);
+    box-shadow:0 14px 34px rgba(5,15,35,.35)}
   .rolecard::before,.rolecard::after{content:"";position:absolute;width:74px;height:74px;pointer-events:none;
-    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23F4EBD8'/%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%231E5B86'/%3E%3Ccircle cx='20' cy='20' r='3.2' fill='%23E0A526'/%3E%3Cpath d='M0 0h7L0 7zM40 0h-7l7 7zM0 40h7l-7-7zM40 40h-7l7-7z' fill='%23E0A526'/%3E%3C/svg%3E") 0 0/37px 37px;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23F2F6FA' fill-opacity='.85'/%3E%3Ccircle cx='20' cy='20' r='3.2' fill='%23E0A526'/%3E%3Cpath d='M0 0h7L0 7zM40 0h-7l7 7zM0 40h7l-7-7zM40 40h-7l7-7z' fill='%23E0A526'/%3E%3C/svg%3E") 0 0/37px 37px;
     opacity:.9}
   .rolecard::before{top:0;left:0;border-bottom-right-radius:18px}
   .rolecard::after{bottom:0;right:0;border-top-left-radius:18px}
   /* Πίσω όψη (κρυμμένος ρόλος) */
   .rolecard.closed{background:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23ffffff14'/%3E%3C/svg%3E") 0 0/44px 44px,
-      #5E1824;
-    color:#F4EBD8;border-color:#7E2A37}
+      linear-gradient(160deg,#13294A,#0B1A33);
+    color:#E6EEF6;border-color:#2D4A78}
   .rolecard.closed::before,.rolecard.closed::after{display:none}
   .rolecard.closed{padding-bottom:30px}
   .rolecard::before,.rolecard::after{width:60px;height:60px}
-  .rolecard.closed .rolelabel{color:#F4EBD8cc}
-  .rolecard.closed .rolename{color:#F4EBD8;font-size:28px}
+  .rolecard.closed .rolelabel{color:#B7CDE2}
+  .rolecard.closed .rolename{color:#F2C766;font-size:28px}
   /* τα περιεχόμενα των καρτελών να μη «ζουλιούνται» */
   .pane[data-pane="flow"] > *, .pane[data-pane="role"] > *, .pane[data-pane="hist"] > *{flex-shrink:0}
-  .rolecard.closed .tapnote{color:#F4EBD8aa}
-  .rolelabel{color:#8A7A60;font-size:14px;font-family:var(--serif);font-style:italic}
-  .rolename{font-family:var(--serif);font-size:40px;line-height:1.1;font-weight:400;color:var(--paper-wine);margin-top:8px}
-  .intel{margin:22px auto 0;max-width:340px;padding-top:16px;border-top:1px solid var(--paper-line);font-size:15px;line-height:1.6}
+  .rolecard.closed .tapnote{color:#B7CDE2}
+  .rolelabel{color:var(--card-muted);font-size:14px;font-family:var(--serif);font-style:italic}
+  .rolename{font-family:var(--serif);font-size:40px;line-height:1.1;font-weight:400;color:var(--card-hi);margin-top:8px}
+  .intel{margin:22px auto 0;max-width:340px;padding-top:16px;border-top:1px solid var(--card-line);font-size:15px;line-height:1.6}
   .intel:empty{display:none}
   .intel p{margin:0 0 6px}
-  .intel b{color:var(--paper-wine)}
-  .team{display:inline-block;margin-top:10px;font-size:13px;color:#8A7A60}
-  .tapnote{color:#8A7A60;font-size:13px;margin-top:16px}
+  .intel b{color:var(--card-hi)}
+  .team{display:inline-block;margin-top:10px;font-size:13px;color:var(--card-muted)}
+  .tapnote{color:var(--card-muted);font-size:13px;margin-top:16px}
   .guide{margin-top:16px}
   .guide h3,.rulesBody h3{font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head);margin:18px 0 6px}
   .guide h3:first-child{margin-top:0}
@@ -211,20 +222,21 @@
   .modal.dead{border-color:var(--wine)}
   .modal.dead .mt{color:var(--wine)}
   /* Ο ρόλος στην αρχή: σαν τραπουλόχαρτο */
-  .modal.paper{background:var(--paper);color:var(--paper-ink);border-color:var(--paper-line);position:relative}
-  .modal.paper .mt{color:var(--paper-wine);font-size:40px}
-  .modal.paper .mk,.modal.paper .ms,.modal.paper .note{color:#8A7A60}
-  .modal.paper .mintel{border-color:var(--paper-line)}
-  .modal.paper .mintel b{color:var(--paper-wine)}
-  .modal.paper button:not(.ghost){background:var(--paper-wine);color:#fff}
-  .modal.paper button.ghost{color:var(--paper-ink);border-color:var(--paper-line)}
+  .modal.paper{background:linear-gradient(160deg,var(--card-a),var(--card-b));color:var(--card-ink);border-color:var(--card-line);position:relative}
+  .modal.paper .mt{color:var(--card-hi);font-size:40px}
+  .modal.paper .mk,.modal.paper .ms,.modal.paper .note{color:var(--card-muted)}
+  .modal.paper .mintel{border-color:var(--card-line)}
+  .modal.paper .mintel b{color:var(--card-hi)}
+  .modal.paper button:not(.ghost){background:var(--card-hi);color:#13283C}
+  .modal.paper button:not(.ghost):hover{background:#F6D27F}
+  .modal.paper button.ghost{color:var(--card-ink);border-color:var(--card-line)}
 
   /* ---------- Ιστορικό ---------- */
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
   .log li:last-child{border-bottom:0}
   .hblock{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin-bottom:14px}
   .hblock.night{border-left-color:#3E4E8A}
-  .hblock.day{border-left-color:#C99A3E}
+  .hblock.day{border-left-color:#E0A526}
   .hblock h3{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head)}
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
   .hvotes{display:grid;grid-template-columns:1fr auto 1fr;gap:2px 8px;font-size:14px;margin:4px 0 6px}
@@ -240,7 +252,7 @@
   .dmrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);
     color:var(--text);padding:12px 6px;border-radius:0;font-weight:500}
   .dmrow:hover{background:var(--raise)}
-  .dmrow .av{width:40px;height:40px;border-radius:50%;background:var(--raise);display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--head);flex:none}
+  .dmrow .av{width:40px;height:40px;font-size:18px}
   .dmrow .mid{flex:1;min-width:0}
   .dmrow .nm{font-size:16px}
   .dmrow .pv{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
@@ -281,6 +293,10 @@
 
   <div class="card" id="joinCard">
     <h2>Μπες στο τραπέζι</h2>
+    <button type="button" class="avpick" id="avPickJoin">
+      <span class="av lg" id="avPreview">📷</span>
+      <span><span id="avPickText">Πρόσθεσε φωτογραφία</span><br><span class="note">Προαιρετικό. Θα τη βλέπουν οι άλλοι παίκτες.</span></span>
+    </button>
     <form id="joinForm" class="row" autocomplete="off">
       <input id="nameInput" maxlength="20" placeholder="Το username σου">
       <button type="submit" id="joinBtn">Μπαίνω</button>
@@ -289,6 +305,10 @@
   </div>
 
   <div class="card hidden" id="waitCard">
+    <button type="button" class="avpick" id="avPickWait" style="margin-bottom:6px">
+      <span class="av lg" id="avMine"></span>
+      <span><span class="note">Πάτα για να αλλάξεις φωτογραφία</span></span>
+    </button>
     <h2>Είσαι μέσα, <span id="myName"></span></h2>
     <p class="note" id="waitNote">Περιμένουμε να μπουν όλοι. Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.</p>
     <button class="ghost small" id="leaveBtn">Αποχώρηση</button>
@@ -425,6 +445,8 @@
     </form>
   </div>
 </div>
+
+<input type="file" accept="image/*" id="photoInput" hidden>
 
 <!-- Pop-up: ρόλος στην αρχή, θάνατος, αλλαγή φάσης -->
 <div class="modalwrap hidden" id="modal">
@@ -722,7 +744,7 @@ function showLobby(){
   $("joinCard").classList.toggle("hidden", joined || playing);
   $("waitCard").classList.toggle("hidden", !joined);
   $("inProgressCard").classList.toggle("hidden", !(playing && !joined));
-  if (joined) $("myName").textContent = players[pid].name;
+  if (joined) { $("myName").textContent = players[pid].name; const m = $("avMine"); m.textContent = ""; const a = avatarEl(pid, "lg"); m.replaceWith(a); a.id = "avMine"; }
   if (joined && playing) $("waitNote").textContent = "Το παιχνίδι ξεκίνησε χωρίς εσένα. Περίμενε τον επόμενο γύρο.";
   else $("waitNote").textContent = `Είμαστε ${list.length}. Χρειάζονται τουλάχιστον ${MIN_PLAYERS} παίκτες (μέχρι ${MAX_PLAYERS}). Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.`;
 
@@ -738,7 +760,7 @@ function showLobby(){
   }
   list.forEach((p, i) => {
     const li = document.createElement("li");
-    const n = document.createElement("span"); n.className = "num"; n.textContent = i + 1;
+    const n = avatarEl(p.id);
     const name = document.createElement("span"); name.className = "pname"; name.textContent = p.name;
     name.appendChild(onlineDot(p.id));
     if (p.id === pid) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
@@ -941,7 +963,7 @@ function renderDMList(){
   ids.forEach(o => {
     const row = document.createElement("button"); row.type = "button"; row.className = "dmrow";
     const nm = nameOf(o);
-    const av = document.createElement("span"); av.className = "av"; av.textContent = (nm[0] || "?").toUpperCase();
+    const av = avatarEl(o);
     const mid = document.createElement("span"); mid.className = "mid";
     const n = document.createElement("div"); n.className = "nm"; n.textContent = nm;
     const pv = document.createElement("div"); pv.className = "pv";
@@ -1024,6 +1046,46 @@ document.querySelectorAll("form.send[data-chat]").forEach(f => {
   });
 });
 
+// ---- 📷 Φωτογραφία προφίλ ----
+let pendingPhoto = null;
+function avatarEl(id, cls){
+  const a = document.createElement("span"); a.className = "av" + (cls ? " " + cls : "");
+  const p = players[id] || {};
+  if (p.photo) { const img = document.createElement("img"); img.src = p.photo; img.alt = ""; a.appendChild(img); }
+  else a.textContent = ((p.name || nameOf(id) || "?")[0] || "?").toUpperCase();
+  return a;
+}
+function shrinkPhoto(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = rej;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = rej;
+      img.onload = () => {
+        const S = 160, c = document.createElement("canvas"); c.width = c.height = S;
+        const k = Math.min(img.width, img.height), sx = (img.width - k) / 2, sy = (img.height - k) / 2;
+        c.getContext("2d").drawImage(img, sx, sy, k, k, 0, 0, S, S);
+        res(c.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+const showPreview = (el, url) => { el.textContent = ""; if (url) { const i = document.createElement("img"); i.src = url; i.alt = ""; el.appendChild(i); } else el.textContent = "📷"; };
+$("avPickJoin").onclick = () => $("photoInput").click();
+$("avPickWait").onclick = () => $("photoInput").click();
+$("photoInput").addEventListener("change", async () => {
+  const f = $("photoInput").files[0]; $("photoInput").value = "";
+  if (!f) return;
+  try {
+    const url = await shrinkPhoto(f);
+    if (players[pid]) { await update(R("players/" + pid), { photo: url }); }
+    else { pendingPhoto = url; showPreview($("avPreview"), url); $("avPickText").textContent = "Άλλαξε φωτογραφία"; }
+  } catch (e) { $("joinMsg").textContent = "Δεν μπόρεσα να διαβάσω τη φωτογραφία. Δοκίμασε άλλη."; }
+});
+
 // ---- Join / leave ----
 $("joinForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -1040,7 +1102,7 @@ $("joinForm").addEventListener("submit", async e => {
       if (others.length >= MAX_PLAYERS) { reason = `Το τραπέζι είναι γεμάτο (${MAX_PLAYERS} παίκτες).`; return; }
       if (others.some(([, p]) => (p.name || "").toLowerCase() === name.toLowerCase())) { reason = "Αυτό το username υπάρχει ήδη."; return; }
       reason = "";
-      cur[pid] = { name, ts: Date.now() };
+      cur[pid] = pendingPhoto ? { name, ts: Date.now(), photo: pendingPhoto } : { name, ts: Date.now() };
       return cur;
     });
     if (!res.committed) { msg.textContent = reason || "Δεν έγινε. Δοκίμασε ξανά."; }
@@ -1366,6 +1428,10 @@ function choiceBtn(label, sel, onClick, right, disabled){
   b.className = "choice" + (sel ? " sel" : "");
   if (disabled) b.disabled = true;
   const l = document.createElement("span"); l.textContent = (sel ? "✔ " : "") + label; b.appendChild(l);
+  // φωτογραφία του παίκτη (αν η ετικέτα είναι όνομα παίκτη)
+  const who = Object.keys(players).filter(k => players[k].name && (label === players[k].name || label.startsWith(players[k].name + " ")))
+    .sort((x, y) => players[y].name.length - players[x].name.length)[0];
+  if (who) { const w = document.createElement("span"); w.className = "lbl"; w.appendChild(avatarEl(who)); b.insertBefore(w, l); w.appendChild(l); }
   if (right) b.appendChild(right);
   b.onclick = onClick;
   return b;
@@ -1872,7 +1938,7 @@ function renderFlow(){
   const ul = $("aliveList"); ul.textContent = "";
   Object.keys(g.roles).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0)).forEach((id, i) => {
     const li = document.createElement("li"); if (deadIn(g, id)) li.className = "dead";
-    const num = document.createElement("span"); num.className = "num"; num.textContent = deadIn(g, id) ? "☠️" : i + 1;
+    const num = avatarEl(id);
     const name = document.createElement("span"); name.className = "pname"; name.textContent = nameOf(id);
     if (!deadIn(g, id)) name.appendChild(onlineDot(id));
     if (id === me) { const m = document.createElement("span"); m.className = "me"; m.textContent = "(εσύ)"; name.appendChild(m); }
