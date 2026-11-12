@@ -196,6 +196,17 @@
   .dead .pname{text-decoration:line-through;color:var(--muted)}
   .odot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-left:8px;vertical-align:middle}
   .odot.on{background:var(--ok)}
+  .voteconfirm{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:4px;padding:12px 14px;border-radius:12px;
+    background:var(--raise);border:1px solid var(--accent);position:sticky;bottom:0;animation:mpop .2s ease}
+  .voteconfirm .vq{flex:1;font-size:16px}
+  .voteconfirm .vq b{color:var(--head)}
+  .voteconfirm .vyes,.voteconfirm .vno{width:52px;height:52px;padding:0;border-radius:50%;font-size:24px;line-height:1}
+  .voteconfirm .vyes{background:var(--ok);color:#fff}
+  .voteconfirm .vyes:hover{background:#5FA26B}
+  .voteconfirm .vno{background:transparent;border:1px solid var(--line);color:var(--wine)}
+  .voteconfirm .vno:hover{background:var(--wine-soft)}
+  .voted{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:var(--raise);border:1px solid var(--ok);font-size:16px}
+  .voted b{color:var(--head)}
   .turnbanner{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-align:center;
     animation:nudge 1.6s ease-in-out 2}
   @keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.02)}}
@@ -240,7 +251,9 @@
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
   .hvotes{display:grid;grid-template-columns:1fr auto 1fr;gap:2px 8px;font-size:14px;margin:4px 0 6px}
   .hvotes .ar{color:var(--muted)}
-  .hres{font-weight:600}
+  .hres{font-weight:600;margin-top:6px!important}
+  .hline{margin:0 0 3px!important;font-size:14px}
+  .hline b{font-weight:600;color:var(--text)}
   .hres b{color:var(--wine)}
   .reveal li{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
   .reveal li span:last-child{color:var(--head);font-weight:600;text-align:right}
@@ -411,7 +424,6 @@
   <div class="pane hidden" data-pane="hist" style="overflow-y:auto">
     <div class="card">
       <h2>📜 Ιστορικό</h2>
-      <p class="note" style="margin-top:-6px">Ποιος ψήφισε ποιον, ποιος βγήκε, ποιος πέθανε.</p>
       <div id="histList"></div>
       <ul class="log hidden" id="logList"></ul>
     </div>
@@ -1437,6 +1449,7 @@ function choiceBtn(label, sel, onClick, right, disabled){
 // POP-UPS: ρόλος στην αρχή · «Πέθανες» · τι έγινε σε κάθε αλλαγή φάσης
 // =====================================================================
 let modal = null;                 // { type: "role" | "death" | "phase", data }
+let votePick = null, votePickDay = null;   // ψήφος που περιμένει επιβεβαίωση
 let prevRapeKey = null;
 let prevPk = null, prevHistLen = null, rapistDismissedRound = null;
 const deathSeen = new Set();
@@ -1794,7 +1807,8 @@ function renderFlow(){
     const mine = (A.vote || {})[me];
     aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
     aNote.textContent = dead ? "Είσαι εκτός παιχνιδιού και δεν ψηφίζεις."
-      : "Πρέπει να ψηφίσεις κάποιον, δεν υπάρχει λευκό. Η ψήφος σου είναι κρυφή μέχρι να ψηφίσουν όλοι, και τότε φαίνεται ποιος ψήφισε ποιον. Μέχρι τότε μπορείς να την αλλάξεις. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
+      : mine ? "Η ψήφος σου είναι οριστική και κρυφή. Όταν ψηφίσουν όλοι, θα φανεί ποιος ψήφισε ποιον."
+      : "Διάλεξε ποιον θα βγάλετε και επιβεβαίωσε. Η ψήφος είναι οριστική και κρυφή μέχρι να ψηφίσουν όλοι. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
       const n = st.tally[id] || 0;
@@ -1805,9 +1819,36 @@ function renderFlow(){
       }
       return t;
     };
-    al.filter(id => id !== me).forEach(id =>
-      box.appendChild(choiceBtn(nameOf(id), mine === id, dead ? () => {} : () => doAction("vote", id))));
-    if (!dead && myRole === "mayor") {
+    if (mine) {
+      // Η ψήφος κλείδωσε
+      const d = document.createElement("div"); d.className = "voted";
+      d.appendChild(avatarEl(mine));
+      const t = document.createElement("span"); t.append("✔ Ψήφισες: ");
+      const b = document.createElement("b"); b.textContent = nameOf(mine) + ((A.double || {})[me] && myRole === "mayor" ? " (×2)" : ""); t.appendChild(b);
+      d.appendChild(t); box.appendChild(d);
+    } else {
+      if (votePickDay !== g.round + ":" + g.day) { votePick = null; votePickDay = g.round + ":" + g.day; }
+      al.filter(id => id !== me).forEach(id =>
+        box.appendChild(choiceBtn(nameOf(id), votePick === id, dead ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); })));
+      if (votePick && !dead) {
+        // Επιβεβαίωση: ✓ ή ✗
+        const c = document.createElement("div"); c.className = "voteconfirm";
+        const q = document.createElement("div"); q.className = "vq";
+        q.append("Ψηφίζεις ");
+        const b = document.createElement("b"); b.textContent = nameOf(votePick); q.appendChild(b);
+        q.append(";");
+        const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.title = "Ναι, οριστικά";
+        yes.setAttribute("aria-label", "Ναι, οριστικά");
+        yes.onclick = () => { const v = votePick; votePick = null; doAction("vote", v); };
+        const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.title = "Όχι";
+        no.setAttribute("aria-label", "Όχι, ακύρωση");
+        no.onclick = () => { votePick = null; renderFlow(); };
+        const sm = document.createElement("div"); sm.className = "note"; sm.style.flexBasis = "100%"; sm.textContent = "Μετά δεν αλλάζει.";
+        c.append(q, no, yes, sm);
+        box.appendChild(c);
+      }
+    }
+    if (!dead && myRole === "mayor" && !mine) {
       const on = !!(A.double || {})[me];
       const m = document.createElement("div"); m.className = "partner"; m.style.marginTop = "6px";
       if ((g.mayorUsed || {})[me]) {
@@ -1970,33 +2011,32 @@ function historyBlock(e){
       b.className = "hblock night";
       const h = document.createElement("h3"); h.textContent = `🌙 Νύχτα ${e.day}`; b.appendChild(h);
       if (died.length) {
-        const p = P(b, "", "hres"); p.append(died.length > 1 ? "Πέθαναν: " : "Πέθανε: ");
-        const x = document.createElement("b"); x.textContent = died.map(nameOf).join(", "); p.appendChild(x);
-      } else P(b, "Κανείς δεν πέθανε.", "hres");
+        const p = P(b, "", "hres"); p.append(died.length > 1 ? "Τη νύχτα πέθαναν οι " : "Τη νύχτα πέθανε ο/η ");
+        const x = document.createElement("b"); x.textContent = died.map(nameOf).join(" και "); p.appendChild(x); p.append(".");
+      } else P(b, "Τη νύχτα δεν πέθανε κανείς.", "hres");
     } else if (e.k === "day") {
       b.className = "hblock day";
       const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}`; b.appendChild(h);
       const votes = e.votes || {}, dbl = Object.values(e.dbl || {});
       const ids = Object.keys(votes).sort((a, c) => ((players[a] || {}).ts || 0) - ((players[c] || {}).ts || 0));
       if (ids.length) {
-        const grid = document.createElement("div"); grid.className = "hvotes";
         ids.forEach(v => {
-          const a = document.createElement("span"); a.textContent = nameOf(v) + (dbl.includes(v) ? " ⭐×2" : "");
-          const ar = document.createElement("span"); ar.className = "ar"; ar.textContent = "→";
-          const t = document.createElement("span"); t.textContent = nameOf(votes[v]);
-          grid.append(a, ar, t);
+          const p = P(b, "", "hline");
+          const a = document.createElement("b"); a.textContent = nameOf(v); p.appendChild(a);
+          p.append(dbl.includes(v) ? " ψήφισε διπλά (Δήμαρχος) " : " ψήφισε ");
+          const t = document.createElement("b"); t.textContent = nameOf(votes[v]); p.appendChild(t);
         });
-        b.appendChild(grid);
         const tally = {};
         ids.forEach(v => tally[votes[v]] = (tally[votes[v]] || 0) + (dbl.includes(v) ? 2 : 1));
 
       }
       if (e.out) {
-        const p = P(b, "", "hres"); p.append("Βγήκε: ");
+        const p = P(b, "", "hres"); p.append("Τελικά ψηφίστηκε και βγήκε ο/η ");
         const x = document.createElement("b"); x.textContent = nameOf(e.out); p.appendChild(x);
-        if (e.note === "crazy") p.append(" (ήταν η Τρέλα)");
-        if (e.note === "kamikaze") p.append(" (ήταν ο Καμικάζι)");
-      } else P(b, "Ισοπαλία: δεν βγήκε κανείς.", "hres");
+        if (e.note === "crazy") p.append(", που ήταν η Τρέλα");
+        if (e.note === "kamikaze") p.append(", που ήταν ο Καμικάζι");
+        p.append(".");
+      } else P(b, "Βγήκε ισοπαλία, οπότε δεν βγήκε κανείς.", "hres");
     } else if (e.k === "kami" || e.k === "suicide") {
       b.className = "hblock";
       const h = document.createElement("h3");
