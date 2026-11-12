@@ -932,12 +932,17 @@ function tone(freq, start, dur, type, vol){
   o.connect(gn).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
 }
 const SOUNDS = {
-  night(){ tone(220, 0, 1.6, "sine", .16); tone(261.6, .05, 1.6, "sine", .12); tone(329.6, .1, 1.7, "sine", .1); tone(110, 0, 1.8, "triangle", .08); },
-  dawn(){ [392, 523.3, 659.3, 784].forEach((f, i) => tone(f, i * .13, .9, "sine", .13)); },
-  turn(){ tone(880, 0, .25, "sine", .2); tone(1174.7, .16, .35, "sine", .18); },
-  death(){ tone(196, 0, .9, "triangle", .2); tone(146.8, .35, 1.3, "triangle", .18); },
-  vote(){ tone(523.3, 0, .35, "triangle", .14); tone(523.3, .2, .35, "triangle", .12); },
-  win(){ [523.3, 659.3, 784, 1046.5].forEach((f, i) => tone(f, i * .12, .7, "triangle", .14)); }
+  // Χαρούμενο: νίκησαν οι καλοί
+  townWin(){
+    const m = [[523.3,0,.18],[659.3,.16,.18],[784,.32,.18],[1046.5,.48,.5],[784,.78,.16],[1046.5,.92,.8]];
+    m.forEach(([f,t,d]) => { tone(f, t, d + .25, "triangle", .16); tone(f / 2, t, d + .25, "sine", .07); });
+    [1318.5, 1568, 2093].forEach((f, i) => tone(f, 1.0 + i * .07, .6, "sine", .05));
+  },
+  // Σκοτεινό: νίκησαν οι κακοί / η Τρέλα
+  badWin(){
+    [[293.7,0,.5],[277.2,.45,.5],[261.6,.9,.5],[196,1.35,1.6]].forEach(([f,t,d]) => { tone(f, t, d + .2, "triangle", .17); tone(f / 2, t, d + .3, "sine", .1); });
+    tone(98, 1.35, 2.0, "sine", .12);
+  }
 };
 function playSound(k){ if (!settings.sound || !SOUNDS[k] || document.visibilityState === "hidden") return; try { SOUNDS[k](); } catch (e) {} }
 
@@ -959,7 +964,6 @@ const baseTitle = document.title;
 function stopTitleFlash(){ if (titleTimer) { clearInterval(titleTimer); titleTimer = null; } document.title = baseTitle; }
 function alertMyTurn(){
   try { if (settings.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
-  playSound("turn");
   stopTitleFlash();
   let on = false;
   titleTimer = setInterval(() => { on = !on; document.title = on ? "🔔 Σειρά σου!" : baseTitle; }, 900);
@@ -1447,7 +1451,7 @@ function renderSheet(){
       l.appendChild(c); g.appendChild(l);
     };
     row("Δόνηση όταν είναι η σειρά μου", "vibrate");
-    row("Ήχοι", "sound");
+    row("Ήχος στο τέλος του παιχνιδιού", "sound");
     row("Η οθόνη να μένει ανοιχτή", "wake");
     const more = group(body);
     const rules = mk("button", "ghost big", "📖 Πώς παίζεται το Παλέρμο"); rules.type = "button";
@@ -1970,9 +1974,15 @@ function phaseSummary(g, fromPk){
     const W = { town: "Κέρδισε η Πόλη!", killers: "Κέρδισαν οι Δολοφόνοι!", crazy: "Κέρδισε η Τρέλα!" };
     const myRole = eff(g, pid), myTeam = ROLE_BY_ID[myRole].team;
     const won = (g.winner === "town" && myTeam === "Πόλη") || (g.winner === "killers" && myTeam === "Δολοφόνοι") || (g.winner === "crazy" && myRole === "crazy");
-    head.appendChild(el("div", "mi", "🏆"));
-    head.appendChild(el("div", "mt", W[g.winner] || "Τέλος"));
-    head.appendChild(el("p", "ms", won ? "Κέρδισες! 🎉" : "Έχασες αυτή τη φορά."));
+    head.appendChild(el("div", "mi", won ? "🎉" : "😞"));
+    head.appendChild(el("div", "mt", won ? "Κέρδισες!" : "Έχασες"));
+    head.appendChild(el("p", "mp c", W[g.winner] || "Τέλος"));
+    const ids = Object.keys(g.roles || {});
+    const winners = ids.filter(id => {
+      const r = eff(g, id);
+      return g.winner === "town" ? ROLE_BY_ID[r].team === "Πόλη" : g.winner === "killers" ? KILLERS.includes(r) : r === "crazy";
+    }).sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
+    if (winners.length) head.appendChild(el("p", "ms", "🏆 Νικητές: " + winners.map(nameOf).join(", ")));
     nodes.push(head);
     if (fromPk && fromPk.includes(":day:") && d) nodes.push(historyBlock(d));
     return { nodes, btn: "Δες ποιος ήταν ποιος" };
@@ -2000,12 +2010,18 @@ function renderModals(g, A){
   else if (modal && modal.type === "role") closeModal();
 
   // 2) «Πέθανες»
-  if (!roleNeeded && dead && !isDeathSeen() && (!modal || modal.type !== "death")) { modal = { type: "death" }; playSound("death"); }
+  const endKey = `palermo.endseen.${ROOM}.${g.round}`;
+  let endSeen = false; try { endSeen = localStorage.getItem(endKey) === "1"; } catch (e) {}
+  if (g.phase === "ended" && dead && !isDeathSeen()) markDeathSeen();      // στο τέλος δείχνουμε μόνο το αποτέλεσμα
+  if (!roleNeeded && dead && !isDeathSeen() && (!modal || modal.type !== "death")) { modal = { type: "death" }; }
 
   // 3) Αλλαγή φάσης / αυτοκτονία Καμικάζι
-  if (!roleNeeded && !(modal && modal.type === "death") && prevPk && prevPk !== pk && prevPk.split(":")[0] === String(g.round)) {
+  if (g.phase === "ended" && !endSeen && !(modal && modal.type === "phase" && modal.end)) {
+    try { localStorage.setItem(endKey, "1"); } catch (e) {}
+    modal = { type: "phase", end: true, data: phaseSummary(g, prevPk || "") };
+    playSound(g.winner === "town" ? "townWin" : "badWin");
+  } else if (!roleNeeded && !(modal && modal.type === "death") && g.phase !== "ended" && prevPk && prevPk !== pk && prevPk.split(":")[0] === String(g.round)) {
     modal = { type: "phase", data: phaseSummary(g, prevPk) };
-    if (!dead || g.phase === "ended") playSound(g.phase === "night" ? "night" : g.phase === "day" ? "dawn" : g.phase === "ended" ? "win" : "vote");
   } else if (!roleNeeded && !modal && prevHistLen != null && H.length > prevHistLen) {
     const e = H[H.length - 1];
     if (e && e.k === "suicide" && e.by !== me && e.target !== me) {
