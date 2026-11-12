@@ -229,6 +229,7 @@
     <div class="stack">
       <button class="big" data-act="start">Ξεκίνα το παιχνίδι</button>
       <div class="note center" data-el="hostMsg"></div>
+      <button class="ghost hidden" data-act="bots">🤖 Γέμισε με δοκιμαστικούς παίκτες</button>
       <button class="ghost" data-act="newRound">Νέος γύρος, ίδιοι παίκτες</button>
       <button class="ghost" data-act="newGame">Νέο παιχνίδι (καθάρισμα όλων)</button>
       <div class="confirm hidden" data-el="confirm">
@@ -351,7 +352,16 @@ function loadPid(){
     return p;
   } catch(e) { return "p" + Math.random().toString(36).slice(2, 12); }
 }
-const pid = loadPid();
+// Λειτουργία δοκιμής: ?test=1, ?test=2 ... δίνει σε κάθε καρτέλα δικό της παίκτη
+const TEST = (new URLSearchParams(location.search).get("test") || "").replace(/[^0-9a-zA-Z]/g, "").slice(0, 10);
+const pid = TEST ? "test-" + TEST : loadPid();
+if (TEST) {
+  const b = document.createElement("div");
+  b.textContent = "🧪 Λειτουργία δοκιμής · παίκτης " + TEST;
+  b.style.cssText = "position:fixed;bottom:8px;left:8px;z-index:9;background:#d9b46a;color:#1a1208;font:600 12px Inter,sans-serif;padding:5px 10px;border-radius:8px;opacity:.9;pointer-events:none";
+  document.body.appendChild(b);
+  document.title = "🧪" + TEST + " · " + document.title;
+}
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -627,6 +637,16 @@ function renderHost(container){
   el("confirm").classList.toggle("hidden", !pendingConfirm);
 
   act("start").onclick = async () => { act("start").disabled = true; await deal(false); };
+  act("bots").classList.toggle("hidden", !(TEST && !playing && count < MAX_PLAYERS));
+  act("bots").onclick = async () => {
+    const add = {}; let n = count, i = 1;
+    while (n < MIN_PLAYERS) {
+      if (!players["bot-" + i]) { add["bot-" + i] = { name: "Bot " + i, ts: Date.now() + i }; n++; }
+      i++;
+    }
+    if (n === count && n < MAX_PLAYERS) { let j = 1; while (players["bot-" + j]) j++; add["bot-" + j] = { name: "Bot " + j, ts: Date.now() }; }
+    await update(R("players"), add);
+  };
   act("newRound").onclick = () => { pendingConfirm = "round"; renderHost(container); };
   act("newGame").onclick = () => { pendingConfirm = "game"; renderHost(container); };
   act("no").onclick = () => { pendingConfirm = null; renderHost(container); };
