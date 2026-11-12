@@ -251,7 +251,7 @@
         <p id="inPlay"></p>
         <h3>Η ροή</h3>
         <p><b>Νύχτα:</b> όλοι κλείνουν τα μάτια. Οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν και ο Γιατρός ποιον θα προστατέψει.</p>
-        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι.</p>
+        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Αν βγει ισοπαλία, δεν βγαίνει κανείς.</p>
         <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
         <h3>Ποιος κερδίζει</h3>
         <p><b>Η Πόλη:</b> όταν βγουν και οι δύο δολοφόνοι.</p>
@@ -378,19 +378,19 @@ const ROLE_BY_ID = {
     name:"Γιατρός", team:"Πόλη",
     does:"Κάθε νύχτα διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Αν οι δολοφόνοι διαλέξουν τον ίδιο, δεν πεθαίνει.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
-    tips:["Προστάτεψε όποιον φαίνεται ότι ξέρει κάτι (πιθανός Αστυνομικός ή Πουτάνα). Αυτούς θα κυνηγήσουν οι δολοφόνοι.","Αν σώσεις κάποιον, μην το πεις αμέσως, γιατί θα αποκαλυφθείς.","Το αν μπορείς να σώσεις τον εαυτό σου ή τον ίδιο παίκτη δύο νύχτες στη σειρά το ορίζει η παρέα."]
+    tips:["Προστάτεψε όποιον φαίνεται ότι ξέρει κάτι (πιθανός Αστυνομικός ή Πουτάνα). Αυτούς θα κυνηγήσουν οι δολοφόνοι.","Αν σώσεις κάποιον, μην το πεις αμέσως, γιατί θα αποκαλυφθείς.","Δεν μπορείς να σώσεις τον ίδιο παίκτη δύο νύχτες στη σειρά.","Τον εαυτό σου μπορείς να τον σώσεις μόνο μία φορά σε όλο το παιχνίδι. Κράτα τη για όταν κινδυνεύεις."]
   },
   mayor: {
     name:"Δήμαρχος", team:"Πόλη",
-    does:"Στις ψηφοφορίες της μέρας η ψήφος σου μετράει διπλή.",
+    does:"Μία φορά σε όλο το παιχνίδι μπορείς να κάνεις την ψήφο σου διπλή σε μια ψηφοφορία της μέρας. Τις υπόλοιπες φορές ψηφίζεις κανονικά.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
-    tips:["Η διπλή ψήφος κρίνει τις κλειστές ψηφοφορίες. Χρησιμοποίησέ τη όταν είσαι σίγουρος.","Αν αποκαλυφθείς, γίνεσαι στόχος των δολοφόνων. Διάλεξε καλά τη στιγμή."]
+    tips:["Η διπλή ψήφος κρίνει τις κλειστές ψηφοφορίες. Χρησιμοποίησέ τη όταν είσαι σίγουρος.","Όταν τη χρησιμοποιήσεις, όλοι θα δουν ότι είσαι ο Δήμαρχος και θα γίνεις στόχος των δολοφόνων. Διάλεξε καλά τη στιγμή."]
   },
   kamikaze: {
     name:"Καμικάζι", team:"Πόλη",
-    does:"Αν σε βγάλει η ψηφοφορία της μέρας, παίρνεις μαζί σου όποιον παίκτη θέλεις: βγαίνει κι εκείνος από το παιχνίδι.",
+    does:"Οποιαδήποτε στιγμή, μέρα ή νύχτα, μπορείς να αυτοκτονήσεις από την καρτέλα «Παιχνίδι» και να πάρεις μαζί σου όποιον παίκτη θέλεις. Βγαίνετε και οι δύο από το παιχνίδι. Αν σε βγάλει η ψηφοφορία πριν το κάνεις, παίρνεις κι εκεί κάποιον μαζί σου.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
-    tips:["Κράτα στο μυαλό σου ποιον υποψιάζεσαι περισσότερο, για να τον πάρεις μαζί σου.","Καμιά φορά αξίζει να φανείς λίγο ύποπτος επίτηδες: αν σε βγάλουν, παίρνεις έναν δολοφόνο."]
+    tips:["Μη βιαστείς: η δύναμή σου αξίζει μόνο αν πάρεις μαζί σου έναν δολοφόνο.","Αν κάποιος σου πει (ή καταλάβεις) ποιος είναι δολοφόνος, αυτή είναι η στιγμή σου.","Όταν αυτοκτονήσεις, όλοι θα μάθουν ότι ήσουν ο Καμικάζι."]
   },
   crazy: {
     name:"Τρέλα", team:"Μόνη της",
@@ -582,6 +582,7 @@ function showGame(roleId){
   if (tab === "dm" && !dmOpen) renderDMList();
   renderFlow();
   applyDeadLocks();
+  tryResolve(false);
   renderHost($("hostGame"));
 }
 
@@ -879,9 +880,16 @@ function nightStatus(g, A){
   const same = picks.length > 0 && picks.every(x => x === picks[0]);
   const agreed = same && picks.length === killers.length ? picks[0] : null;
   const doc = al.find(id => g.roles[id] === "doctor");
-  const save = doc ? (A.save || {})[doc] || null : null;
+  const rawSave = doc ? (A.save || {})[doc] || null : null;
+  // Κανόνες Γιατρού: όχι τον ίδιο 2 νύχτες στη σειρά, τον εαυτό του μόνο μία φορά
+  const save = rawSave && !docBlocked(g, rawSave, doc) ? rawSave : null;
   const done = (killers.length === 0 || !!agreed) && (!doc || !!save);
   return { done, target: agreed, forced: same ? picks[0] : null, save, killers, doc };
+}
+function docBlocked(g, target, doc){
+  if (target === g.docLast) return "όχι 2 νύχτες στη σειρά";
+  if (target === doc && g.docSelfUsed) return "έχεις ήδη σώσει τον εαυτό σου";
+  return "";
 }
 // --- Κατάσταση ψηφοφορίας ---
 function dayStatus(g, A){
@@ -889,17 +897,20 @@ function dayStatus(g, A){
   const votes = A.vote || {};
   const voted = al.filter(id => votes[id]);
   const tally = {}, voters = {};
-  let blank = 0;
+  let mayorDoubled = false;
   voted.forEach(id => {
-    const v = votes[id], w = g.roles[id] === "mayor" ? 2 : 1;
-    if (v === "skip") { blank += w; (voters.skip = voters.skip || []).push(id); return; }
-    if (deadIn(g, v)) return;
-    tally[v] = (tally[v] || 0) + w; (voters[v] = voters[v] || []).push(id);
+    const v = votes[id];
+    if (!v || v === "skip" || deadIn(g, v) || v === id) return;
+    const dbl = g.roles[id] === "mayor" && !g.mayorUsed && !!(A.double || {})[id];
+    if (dbl) mayorDoubled = true;
+    const w = dbl ? 2 : 1;
+    tally[v] = (tally[v] || 0) + w;
+    (voters[v] = voters[v] || []).push(dbl ? nameOf(id) + " (×2 Δήμαρχος)" : nameOf(id));
   });
   const max = Math.max(0, ...Object.values(tally));
   const top = Object.keys(tally).filter(id => tally[id] === max);
-  const out = max > 0 && top.length === 1 && max > blank ? top[0] : null;
-  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, blank, out };
+  const out = max > 0 && top.length === 1 ? top[0] : null;
+  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, out, mayorDoubled, tie: top.length > 1 };
 }
 function kamiStatus(g, A){
   const t = (A.kami || {})[g.kami] || null;
@@ -936,6 +947,10 @@ async function tryResolve(force){
       if (g.phase === "night") {
         const s = nightStatus(g, A);
         const tgt = s.target || (force ? s.forced : null);
+        if (s.doc) {
+          g.docLast = s.save || null;
+          if (s.save && s.save === s.doc) g.docSelfUsed = true;
+        }
         if (tgt && tgt !== s.save && !deadIn(g, tgt)) {
           g.dead[tgt] = true;
           log(`🌅 Ξημέρωσε. Τη νύχτα σκοτώθηκε ο/η ${nm(tgt)}.`);
@@ -946,8 +961,9 @@ async function tryResolve(force){
 
       } else if (g.phase === "day") {
         const s = dayStatus(g, A);
+        if (s.mayorDoubled) { g.mayorUsed = true; log("⭐ Ο Δήμαρχος χρησιμοποίησε τη διπλή του ψήφο."); }
         if (!s.out) {
-          log("🗳️ Η ψηφοφορία δεν έβγαλε κανέναν (ισοπαλία ή λευκά).");
+          log("🗳️ Η ψηφοφορία έβγαλε ισοπαλία, οπότε δεν βγαίνει κανείς.");
           goNight(g, log);
         } else {
           g.dead[s.out] = true;
@@ -978,10 +994,30 @@ async function tryResolve(force){
   finally { resolving = false; }
 }
 
+// --- Καμικάζι: αυτοκτονία οποιαδήποτε στιγμή ---
+let kamiArm = false, kamiPick = null;
+async function kamikazeNow(target){
+  const expectRound = game.round;
+  await runTransaction(R("game"), cur => {
+    if (!cur || cur.round !== expectRound || !cur.phase || cur.phase === "ended" || cur.phase === "kamikaze") return;
+    if (cur.roles[pid] !== "kamikaze" || deadIn(cur, pid) || !target || deadIn(cur, target) || target === pid) return;
+    const g = cur;
+    g.dead = g.dead || {};
+    g.log = Object.values(g.log || {});
+    const log = t => g.log.push({ t, ts: Date.now() });
+    g.dead[pid] = true; g.dead[target] = true;
+    log(`💥 Ο/Η ${nameOf(pid)} ήταν ο Καμικάζι! Αυτοκτόνησε και πήρε μαζί του τον/την ${nameOf(target)}.`);
+    checkWin(g, log);
+    return g;
+  });
+  kamiArm = false; kamiPick = null;
+}
+
 // --- Οθόνη "Παιχνίδι" ---
-function choiceBtn(label, sel, onClick, right){
+function choiceBtn(label, sel, onClick, right, disabled){
   const b = document.createElement("button"); b.type = "button";
   b.className = "choice" + (sel ? " sel" : "");
+  if (disabled) b.disabled = true;
   const l = document.createElement("span"); l.textContent = (sel ? "✔ " : "") + label; b.appendChild(l);
   if (right) b.appendChild(right);
   b.onclick = onClick;
@@ -1033,7 +1069,13 @@ function renderFlow(){
       aTitle.textContent = "💉 Ποιον θα προστατέψεις απόψε;";
       aNote.textContent = "Αν οι δολοφόνοι διαλέξουν αυτόν τον παίκτη, δεν θα πεθάνει.";
       const mine = (A.save || {})[me];
-      al.forEach(id => box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : ""), mine === id, () => doAction("save", id))));
+      aNote.textContent += " Δεν μπορείς να σώσεις τον ίδιο παίκτη δύο νύχτες στη σειρά, και τον εαυτό σου μόνο μία φορά σε όλο το παιχνίδι."
+        + (g.docSelfUsed ? " (Έχεις ήδη σώσει τον εαυτό σου.)" : "");
+      al.forEach(id => {
+        const why = docBlocked(g, id, me);
+        box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : "") + (why ? " · " + why : ""),
+          mine === id && !why, () => doAction("save", id), null, !!why));
+      });
     } else {
       aTitle.textContent = "😴 Κοιμάσαι";
       aNote.textContent = "Περίμενε να ξημερώσει. Θα δεις εδώ τι έγινε τη νύχτα.";
@@ -1047,22 +1089,34 @@ function renderFlow(){
     const mine = (A.vote || {})[me];
     aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
     aNote.textContent = dead ? "Είσαι εκτός παιχνιδιού και δεν ψηφίζεις."
-      : "Η ψηφοφορία είναι φανερή. Μπορείς να αλλάξεις ψήφο μέχρι να ψηφίσουν όλοι."
-        + (myRole === "mayor" ? " Ως Δήμαρχος, η ψήφος σου μετράει διπλή." : "")
-        + " Ισοπαλία = δεν βγαίνει κανείς.";
+      : "Πρέπει να ψηφίσεις κάποιον, δεν υπάρχει λευκό. Η ψηφοφορία είναι φανερή και μπορείς να αλλάξεις ψήφο μέχρι να ψηφίσουν όλοι. Αν βγει ισοπαλία, δεν βγαίνει κανείς.";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
-      const n = id === "skip" ? st.blank : (st.tally[id] || 0);
+      const n = st.tally[id] || 0;
       if (n) {
         const b = document.createElement("b"); b.textContent = n + (n === 1 ? " ψήφος" : " ψήφοι"); t.appendChild(b);
         t.appendChild(document.createElement("br"));
-        t.append((st.voters[id] || []).map(nameOf).join(", "));
+        t.append((st.voters[id] || []).join(", "));
       }
       return t;
     };
     al.filter(id => id !== me).forEach(id =>
       box.appendChild(choiceBtn(nameOf(id), mine === id, dead ? () => {} : () => doAction("vote", id), tallyEl(id))));
-    box.appendChild(choiceBtn("Λευκό (κανένας)", mine === "skip", dead ? () => {} : () => doAction("vote", "skip"), tallyEl("skip")));
+    if (!dead && myRole === "mayor") {
+      const on = !!(A.double || {})[me];
+      const m = document.createElement("div"); m.className = "partner"; m.style.marginTop = "6px";
+      if (g.mayorUsed) {
+        m.textContent = "⭐ Έχεις ήδη χρησιμοποιήσει τη διπλή σου ψήφο σε αυτό το παιχνίδι.";
+      } else {
+        m.append("⭐ Διπλή ψήφος Δημάρχου: μπορείς να τη χρησιμοποιήσεις μία φορά σε όλο το παιχνίδι. Όλοι θα δουν ότι ψήφισες διπλά. Ενεργοποίησέ τη πριν ψηφίσεις.");
+        const b = document.createElement("button"); b.type = "button";
+        b.className = on ? "big" : "ghost big"; b.style.marginTop = "10px";
+        b.textContent = on ? "⭐ Διπλή ψήφος: ΕΝΕΡΓΗ (πάτα για ακύρωση)" : "⭐ Χρησιμοποίησε τη διπλή ψήφο σήμερα";
+        b.onclick = () => set(R(`act/${g.round}/${phaseKey(g)}/double/${me}`), on ? null : true);
+        m.appendChild(b);
+      }
+      box.appendChild(m);
+    }
     prog.textContent = `Ψήφισαν ${st.voted} από ${st.total}.`;
 
   } else if (g.phase === "kamikaze") {
@@ -1096,8 +1150,37 @@ function renderFlow(){
     aNote.textContent = amHost() ? "Πάτα «Νέος γύρος» από κάτω για να ξαναπαίξετε." : "Ο host μπορεί να ξεκινήσει νέο γύρο.";
   }
 
-  // Host: κουμπί για να προχωρήσει η φάση
   const hf = $("hostFlow"); hf.textContent = "";
+
+  // Καμικάζι: κουμπί αυτοκτονίας
+  if (myRole === "kamikaze" && !dead && g.phase !== "ended" && g.phase !== "kamikaze") {
+    const c = document.createElement("div"); c.className = "card host";
+    const h = document.createElement("h2"); h.textContent = "💥 Αυτοκτονία Καμικάζι";
+    const n = document.createElement("p"); n.className = "note"; n.style.margin = "0 0 10px";
+    n.textContent = "Οποιαδήποτε στιγμή μπορείς να αυτοκτονήσεις και να πάρεις κάποιον μαζί σου. Όλοι θα μάθουν ότι ήσουν ο Καμικάζι.";
+    c.append(h, n);
+    if (!kamiArm) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "ghost big";
+      b.textContent = "💥 Θέλω να αυτοκτονήσω";
+      b.onclick = () => { kamiArm = true; renderFlow(); };
+      c.appendChild(b);
+    } else {
+      const ch = document.createElement("div"); ch.className = "choices";
+      al.filter(id => id !== me).forEach(id => ch.appendChild(choiceBtn(nameOf(id), kamiPick === id, () => { kamiPick = id; renderFlow(); })));
+      c.appendChild(ch);
+      const row = document.createElement("div"); row.className = "confirm"; row.style.marginTop = "10px";
+      const yes = document.createElement("button"); yes.type = "button";
+      yes.textContent = kamiPick ? "💥 Πάρε μαζί σου: " + nameOf(kamiPick) : "Διάλεξε παίκτη";
+      yes.disabled = !kamiPick;
+      yes.onclick = () => kamikazeNow(kamiPick);
+      const no = document.createElement("button"); no.type = "button"; no.className = "ghost"; no.textContent = "Άκυρο";
+      no.onclick = () => { kamiArm = false; kamiPick = null; renderFlow(); };
+      row.append(yes, no); c.appendChild(row);
+    }
+    hf.appendChild(c);
+  }
+
+  // Host: κουμπί για να προχωρήσει η φάση
   if (amHost() && g.phase !== "ended") {
     const c = document.createElement("div"); c.className = "card host";
     const n = document.createElement("p"); n.className = "note"; n.style.margin = "0 0 10px";
@@ -1107,6 +1190,7 @@ function renderFlow(){
     b.onclick = () => { if (b.dataset.sure) { tryResolve(true); } else { b.dataset.sure = "1"; b.textContent = "Σίγουρα; Πάτα ξανά"; } };
     c.append(n, b); hf.appendChild(c);
   }
+  hf.classList.toggle("hidden", !hf.firstChild);
 
   // Λίστα παικτών
   const ul = $("aliveList"); ul.textContent = "";
