@@ -505,7 +505,7 @@
         <p><b>Μέρα 1:</b> συζητάτε και ψηφίζετε έναν.</p>
         <p><b>Νύχτα 2:</b> πρώτα ο Βιαστής (αν υπάρχει) αντιγράφει έναν ρόλο και γίνεται ξανά αναγνώριση. Μετά οι δολοφόνοι σκοτώνουν για πρώτη φορά και ο Γιατρός σώζει για πρώτη φορά.</p>
         <p><b>Από εκεί και πέρα, κάθε νύχτα:</b> πρώτα οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν (πρέπει να συμφωνήσουν στο ίδιο άτομο), μετά ο Γιατρός διαλέγει ποιον θα προστατέψει (χωρίς να ξέρει το θύμα), και μετά ξημερώνει.</p>
-        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Οι ψήφοι μένουν κρυφές μέχρι να ψηφίσουν όλοι, και μετά φαίνεται ποιος ψήφισε ποιον. Αν βγει ισοπαλία, δεν βγαίνει κανείς.</p>
+        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι. Όλοι πρέπει να ψηφίσουν κάποιον, δεν υπάρχει λευκό. Οι ψήφοι μένουν κρυφές μέχρι να ψηφίσουν όλοι, και μετά φαίνεται ποιος ψήφισε ποιον. Αν βγει ισοψηφία, γίνεται 2η ψηφοφορία: όλοι οι υπόλοιποι ξαναψηφίζουν μόνο ανάμεσα σε όσους ισοψήφησαν. Αν βγει ξανά ισοψηφία, δεν βγαίνει κανείς.</p>
         <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
         <h3>Ποιος κερδίζει</h3>
         <p><b>Η Πόλη:</b> όταν βγουν όλοι οι δολοφόνοι.</p>
@@ -1477,7 +1477,7 @@ function renderSheet(){
     const al = aliveIn(g);
     const off = al.filter(id => !online[id] && !id.startsWith("bot-"));
     if (off.length) gp.appendChild(mk("p", "note", "⚠️ Εκτός σύνδεσης: " + off.map(nameOf).join(", ")));
-    const label = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? "⏭ Κλείσε την ψηφοφορία" : "⏭ Προχώρα";
+    const label = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? (g.runoff ? "⏭ Κλείσε τη 2η ψηφοφορία" : "⏭ Κλείσε την ψηφοφορία") : "⏭ Προχώρα";
     gp.appendChild(sureBtn("advance", label, "Σίγουρα; Πάτα ξανά", () => tryResolve(true), "ghost big"));
   }
 
@@ -1660,7 +1660,7 @@ function renderHost(container){
 let acts = {};            // palermo/act/<round>/<phaseKey>/<kind>/<pid> = target
 let resolving = false;
 let lastPhaseSeen = null;
-const phaseKey = g => ({ night: "n", day: "d", kamikaze: "k" }[g.phase] || "x") + g.day;
+const phaseKey = g => ({ night: "n", day: (g.runoff ? "r" : "d"), kamikaze: "k" }[g.phase] || "x") + g.day;
 const deadIn = (g, id) => !!(g.dead && g.dead[id]);
 const aliveIn = g => Object.keys(g.roles || {}).filter(id => !deadIn(g, id))
   .sort((a, b) => ((players[a] || {}).ts || 0) - ((players[b] || {}).ts || 0));
@@ -1715,9 +1715,10 @@ function docBlocked(g, target, doc){
 }
 // --- Κατάσταση ψηφοφορίας ---
 function dayStatus(g, A){
-  const al = aliveIn(g);
+  const cands = g.runoff ? Object.values(g.runoff.cands || {}) : null;
+  const al = aliveIn(g).filter(id => !cands || !cands.includes(id));      // στη 2η ψηφοφορία δεν ψηφίζουν οι υποψήφιοι
   const votes = A.vote || {};
-  const voted = al.filter(id => votes[id]);
+  const voted = al.filter(id => votes[id] && (!cands || cands.includes(votes[id])));
   const tally = {}, voters = {};
   const mayorDoubled = [];
   voted.forEach(id => {
@@ -1732,7 +1733,7 @@ function dayStatus(g, A){
   const max = Math.max(0, ...Object.values(tally));
   const top = Object.keys(tally).filter(id => tally[id] === max);
   const out = max > 0 && top.length === 1 ? top[0] : null;
-  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, out, mayorDoubled, tie: top.length > 1 };
+  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, out, mayorDoubled, tie: max > 0 && top.length > 1, top, cands };
 }
 function kamiStatus(g, A){
   const t = (A.kami || {})[g.kami] || null;
@@ -1776,10 +1777,10 @@ async function tryResolve(force){
   if (!force && !st.done) return;
   if (resolving) return;
   resolving = true;
-  const expect = { round: game.round, phase: game.phase, day: game.day };
+  const expect = { round: game.round, phase: game.phase, day: game.day, runoff: !!game.runoff };
   try {
     await runTransaction(R("game"), cur => {
-      if (!cur || cur.round !== expect.round || cur.phase !== expect.phase || cur.day !== expect.day) return;   // κάποιος άλλος πρόλαβε
+      if (!cur || cur.round !== expect.round || cur.phase !== expect.phase || cur.day !== expect.day || !!cur.runoff !== expect.runoff) return;   // κάποιος άλλος πρόλαβε
       const g = cur;
       g.dead = g.dead || {};
       g.log = Object.values(g.log || {});
@@ -1817,19 +1818,27 @@ async function tryResolve(force){
       } else if (g.phase === "day") {
         const s = dayStatus(g, A);
         const votesMap = {};
-        aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v)) votesMap[id] = v; });
+        const cands = s.cands;
+        aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v) && (!cands || (cands.includes(v) && !cands.includes(id)))) votesMap[id] = v; });
+        const goRunoff = !cands && !s.out && s.tie;
         const outRole = s.out ? eff(g, s.out) : null;
         const vIds = Object.keys(votesMap);
         if (vIds.length) log("🗳️ Οι ψήφοι: " + vIds.map(v => nm(v) + (s.mayorDoubled.includes(v) ? " (×2)" : "") + " → " + nm(votesMap[v])).join(", "));
         hist({ k: "day", day: g.day, votes: votesMap, dbl: s.mayorDoubled.length ? s.mayorDoubled : null,
-               out: s.out || null, note: outRole === "crazy" ? "crazy" : outRole === "kamikaze" ? "kamikaze" : null });
+               out: s.out || null, note: outRole === "crazy" ? "crazy" : outRole === "kamikaze" ? "kamikaze" : null,
+               tie: s.tie ? s.top : null, runoff: cands ? true : null });
         if (s.mayorDoubled.length) {
           g.mayorUsed = g.mayorUsed || {};
           s.mayorDoubled.forEach(id => g.mayorUsed[id] = true);
           log("⭐ Ο Δήμαρχος χρησιμοποίησε τη διπλή του ψήφο.");
         }
-        if (!s.out) {
-          log("🗳️ Η ψηφοφορία έβγαλε ισοπαλία, οπότε δεν βγαίνει κανείς.");
+        g.runoff = null;
+        if (goRunoff) {
+          s.top.sort((x, y) => ((players[x] || {}).ts || 0) - ((players[y] || {}).ts || 0));
+          g.runoff = { cands: s.top };
+          log(`🗳️ Ισοψηφία ανάμεσα σε ${s.top.map(nm).join(" και ")}. Ξαναψηφίζουν όλοι οι υπόλοιποι, μόνο ανάμεσα σε αυτούς.`);
+        } else if (!s.out) {
+          log(cands ? "🗳️ Ξανά ισοψηφία, οπότε δεν βγαίνει κανείς." : "🗳️ Δεν βγήκε κανείς.");
           goNight(g, log);
         } else {
           g.dead[s.out] = true;
@@ -1963,6 +1972,19 @@ function phaseSummary(g, fromPk){
   const H = Object.values(g.history || {});
   const nodes = [];
   const lastOf = k => H.slice().reverse().find(e => e.k === k);
+  if (g.phase === "day" && g.runoff) {
+    const d0 = lastOf("day");
+    const head = el("div");
+    head.appendChild(el("div", "mi", "⚖️"));
+    head.appendChild(el("div", "mt", "Ισοψηφία!"));
+    nodes.push(head);
+    if (d0) nodes.push(historyBlock(d0));
+    const c = Object.values(g.runoff.cands || {});
+    nodes.push(el("p", "mp c", c.includes(pid)
+      ? "Είσαι στην ισοψηφία. Οι υπόλοιποι θα ψηφίσουν ξανά ποιος θα βγει."
+      : `Ξαναψηφίστε ανάμεσα σε ${c.map(nameOf).join(" και ")}.`));
+    return { nodes, btn: "Πάμε στη 2η ψηφοφορία" };
+  }
   if (g.phase === "day") {
     const n = lastOf("night");
     const died = n ? Object.values(n.died || {}) : [];
@@ -2005,7 +2027,7 @@ function phaseSummary(g, fromPk){
 
 function renderModals(g, A){
   const me = pid, dead = amDead();
-  const pk = g.round + ":" + g.phase + ":" + g.day;
+  const pk = g.round + ":" + g.phase + ":" + g.day + (g.runoff ? ":r" : "");
   const H = Object.values(g.history || {});
   const st = g.phase === "night" ? nightStatus(g, A) : null;
 
@@ -2123,7 +2145,7 @@ function renderFlow(){
   const ns = g.phase === "night" ? nightStatus(g, A) : null;
   const docTurn = !!ns && myRole === "doctor" && ns.docTurn;
   const killTurn = !!ns && KILLERS.includes(myRole) && ns.killersTurn;
-  const pk = g.round + ":" + g.phase + ":" + g.day + (docTurn ? ":doc" : "") + (killTurn ? ":kill" : "") + ":" + (g.rapeInfo ? g.rapeInfo.result : 0);
+  const pk = g.round + ":" + g.phase + ":" + g.day + (g.runoff ? ":r" : "") + (docTurn ? ":doc" : "") + (killTurn ? ":kill" : "") + ":" + (g.rapeInfo ? g.rapeInfo.result : 0);
   if (lastPhaseSeen && lastPhaseSeen !== pk && tab !== "flow") $("dotFlow").classList.remove("hidden");
   lastPhaseSeen = pk;
 
@@ -2290,8 +2312,9 @@ function renderFlow(){
     sub.textContent = "";
     const st = dayStatus(g, A);
     const mine = (A.vote || {})[me];
-    aTitle.textContent = dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
-    aNote.textContent = "";
+    const isCand = !!st.cands && st.cands.includes(me);
+    aTitle.textContent = st.cands ? "⚖️ 2η ψηφοφορία" + (dead || isCand ? " (παρακολουθείς)" : "") : dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
+    aNote.textContent = st.cands ? `Ισοψηφία: ${st.cands.map(nameOf).join(" και ")}.` + (isCand ? " Ψηφίζουν οι υπόλοιποι." : "") : "";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
       const n = st.tally[id] || 0;
@@ -2310,10 +2333,11 @@ function renderFlow(){
       const b = document.createElement("b"); b.textContent = nameOf(mine) + ((A.double || {})[me] && myRole === "mayor" ? " (×2)" : ""); t.appendChild(b);
       d.appendChild(t); box.appendChild(d);
     } else {
-      if (votePickDay !== g.round + ":" + g.day) { votePick = null; votePickDay = g.round + ":" + g.day; }
-      al.filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), votePick === id, dead ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); })));
-      if (votePick && !dead) {
+      if (votePickDay !== g.round + ":" + phaseKey(g)) { votePick = null; votePickDay = g.round + ":" + phaseKey(g); }
+      const locked = dead || isCand;
+      (st.cands || al).filter(id => id !== me).forEach(id =>
+        box.appendChild(choiceBtn(nameOf(id), votePick === id, locked ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); })));
+      if (votePick && !locked) {
         // Επιβεβαίωση: ✓ ή ✗
         const c = document.createElement("div"); c.className = "voteconfirm";
         const q = document.createElement("div"); q.className = "vq";
@@ -2330,7 +2354,7 @@ function renderFlow(){
         box.appendChild(c);
       }
     }
-    if (!dead && myRole === "mayor" && !mine) {
+    if (!dead && !isCand && myRole === "mayor" && !mine) {
       const on = !!(A.double || {})[me];
       const m = document.createElement("div"); m.className = "partner"; m.style.marginTop = "6px";
       if ((g.mayorUsed || {})[me]) {
@@ -2390,7 +2414,8 @@ function renderFlow(){
       else if (KILLERS.includes(myRole) && st2.killersTurn && !st2.target && !(A.kill || {})[me]) myTurn = true;
       else if (myRole === "doctor" && st2.docTurn && !st2.saves[me]) myTurn = true;
     } else if (g.phase === "day") {
-      myTurn = !(A.vote || {})[me];
+      const cc = g.runoff ? Object.values(g.runoff.cands || {}) : null;
+      myTurn = !(A.vote || {})[me] && !(cc && cc.includes(me));
     } else if (g.phase === "kamikaze") {
       myTurn = me === g.kami && !(A.kami || {})[me];
     }
@@ -2500,7 +2525,7 @@ function historyBlock(e){
       } else P(b, "Τη νύχτα δεν πέθανε κανείς.", "hres");
     } else if (e.k === "day") {
       b.className = "hblock day";
-      const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}`; b.appendChild(h);
+      const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}` + (e.runoff ? " · 2η ψηφοφορία" : ""); b.appendChild(h);
       const votes = e.votes || {}, dbl = Object.values(e.dbl || {});
       const ids = Object.keys(votes).sort((a, c) => ((players[a] || {}).ts || 0) - ((players[c] || {}).ts || 0));
       if (ids.length) {
@@ -2520,7 +2545,11 @@ function historyBlock(e){
         if (e.note === "crazy") p.append(", που ήταν η Τρέλα");
         if (e.note === "kamikaze") p.append(", που ήταν ο Καμικάζι");
         p.append(".");
-      } else P(b, "Βγήκε ισοπαλία, οπότε δεν βγήκε κανείς.", "hres");
+      } else if (e.tie && !e.runoff) {
+        const p = P(b, "", "hres"); p.append("Ισοψηφία ανάμεσα σε ");
+        const x = document.createElement("b"); x.textContent = Object.values(e.tie).map(nameOf).join(" και "); p.appendChild(x);
+        p.append(".");
+      } else P(b, e.runoff ? "Ξανά ισοψηφία, οπότε δεν βγήκε κανείς." : "Δεν βγήκε κανείς.", "hres");
     } else if (e.k === "love") {
       b.className = "hblock";
       P(b, `💔 Ο/Η ${nameOf(e.id)} πέθανε μαζί με τον/την ${nameOf(e.of)}. Ήταν ερωτευμένοι.`, "hres");
