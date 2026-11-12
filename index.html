@@ -771,7 +771,23 @@ const exRapist = id => game && game.roles[id] === "rapist" && eff(game, id) !== 
 // Host = ο πρώτος που μπήκε στο τραπέζι
 // Host: όποιον όρισε ο host, αλλιώς ο πρώτος που μπήκε
 let hostPick = null;
-const hostId = () => { if (hostPick && players[hostPick]) return hostPick; const l = sortedPlayers(); return l.length ? l[0].id : null; };
+const baseHost = () => { if (hostPick && players[hostPick]) return hostPick; const l = sortedPlayers(); return l.length ? l[0].id : null; };
+// Αν ο host κλείσει την εφαρμογή για πάνω από 1 λεπτό, τα κουμπιά του host πάνε προσωρινά στον επόμενο συνδεδεμένο
+let hostOffSince = null, hostOffFor = null;
+const hostId = () => {
+  const h = baseHost();
+  if (!h || !Object.keys(online || {}).length || online[h]) return h;
+  if (hostOffFor !== h || !hostOffSince || Date.now() - hostOffSince < 60000) return h;
+  const next = sortedPlayers().find(p => online[p.id]);
+  return next ? next.id : h;
+};
+setInterval(() => {
+  const h = baseHost();
+  const off = !!h && Object.keys(online || {}).length > 0 && !online[h];
+  if (!off) { if (hostOffSince) { hostOffSince = null; hostOffFor = null; if (gotPlayers && gotGame) render(); } return; }
+  if (hostOffFor !== h) { hostOffFor = h; hostOffSince = Date.now(); return; }
+  if (Date.now() - hostOffSince >= 60000 && Date.now() - hostOffSince < 71000 && gotPlayers && gotGame) render();
+}, 10000);
 const amHost = () => hostId() === pid;
 
 // ---- Ταυτότητα αυτής της συσκευής ----
@@ -1486,7 +1502,8 @@ function renderSheet(){
     const off = al.filter(id => !online[id] && !id.startsWith("bot-"));
     if (off.length) gp.appendChild(mk("p", "note", "⚠️ Εκτός σύνδεσης: " + off.map(nameOf).join(", ")));
     const label = g.phase === "night" ? "⏭ Ξημέρωσε τώρα" : g.phase === "day" ? (g.runoff ? `⏭ Κλείσε την ${(g.runoff.n || 1) + 1}η ψηφοφορία` : "⏭ Κλείσε την ψηφοφορία") : "⏭ Προχώρα";
-    gp.appendChild(sureBtn("advance", label, "Σίγουρα; Πάτα ξανά", () => tryResolve(true), "ghost big"));
+    if (talking(g)) gp.appendChild(sureBtn("talk", "🗳️ Τέλος συζήτησης, ψηφίστε τώρα", "Σίγουρα; Πάτα ξανά", () => update(R("game"), { dayEnds: null }), "ghost big"));
+    else gp.appendChild(sureBtn("advance", label, "Σίγουρα; Πάτα ξανά", () => tryResolve(true), "ghost big"));
   }
 
   const rc = group(body, "Τραπέζι");
@@ -1630,7 +1647,7 @@ function renderHost(container){
     }
     // ⏱️ Χρόνος ψηφοφορίας
     const th = document.createElement("div"); th.className = "meta"; th.style.margin = "16px 0 6px";
-    const ta = document.createElement("span"); ta.textContent = "⏱️ Χρόνος για κάθε ψηφοφορία"; th.appendChild(ta);
+    const ta = document.createElement("span"); ta.textContent = "💬 Χρόνος συζήτησης πριν την ψηφοφορία"; th.appendChild(ta);
     rp.appendChild(th);
     const tg = document.createElement("div"); tg.className = "timergrid";
     [[0, "Χωρίς όριο"], [60, "1′"], [120, "2′"], [180, "3′"], [300, "5′"], [600, "10′"]].forEach(([v, lbl]) => {
@@ -1735,7 +1752,7 @@ function docBlocked(g, target, doc){
 }
 // --- Κατάσταση ψηφοφορίας ---
 function dayStatus(g, A){
-  const cands = g.runoff ? Object.values(g.runoff.cands || {}) : null;
+  const cands = g.runoff ? Object.values(g.runoff.cands || {}).filter(id => !deadIn(g, id)) : null;
   const al = aliveIn(g).filter(id => !cands || !cands.includes(id));      // στη 2η ψηφοφορία δεν ψηφίζουν οι υποψήφιοι
   const votes = A.vote || {};
   const voted = al.filter(id => votes[id] && (!cands || cands.includes(votes[id])));
@@ -1753,7 +1770,7 @@ function dayStatus(g, A){
   const max = Math.max(0, ...Object.values(tally));
   const top = Object.keys(tally).filter(id => tally[id] === max);
   const out = max > 0 && top.length === 1 ? top[0] : null;
-  return { done: voted.length === al.length, voted: voted.length, total: al.length, tally, voters, out, mayorDoubled, tie: max > 0 && top.length > 1, top, cands };
+  return { done: voted.length === al.length || (!!cands && cands.length === 0), voted: voted.length, total: al.length, tally, voters, out, mayorDoubled, tie: max > 0 && top.length > 1, top, cands };
 }
 function kamiStatus(g, A){
   const t = (A.kami || {})[g.kami] || null;
@@ -1793,9 +1810,10 @@ function tickClock(){
   const c = document.getElementById("voteClock");
   if (!game || game.phase !== "day" || !game.dayEnds) return;
   const left = Math.max(0, Math.ceil((game.dayEnds - Date.now()) / 1000));
-  if (c) { c.textContent = "⏱️ " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); c.classList.toggle("low", left <= 15); }
-  if (left === 0) tryResolve(true);
+  if (c) { c.textContent = "💬 Συζήτηση · " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0"); c.classList.toggle("low", left <= 15); }
+  if (left === 0 && c) renderFlow();          // τέλος συζήτησης → ανοίγει η ψηφοφορία
 }
+const talking = g => !!(g && g.phase === "day" && !g.runoff && g.dayEnds && Date.now() < g.dayEnds);
 setInterval(tickClock, 1000);
 function goNight(g, log){ g.dayEnds = null; g.phase = "night"; g.day = (g.day || 1) + 1; log(`🌙 Πέφτει η νύχτα ${g.day}.`); }
 
@@ -1866,7 +1884,7 @@ async function tryResolve(force){
         if (goRunoff) {
           s.top.sort((x, y) => ((players[x] || {}).ts || 0) - ((players[y] || {}).ts || 0));
           g.runoff = { cands: s.top, n: roundNo + 1 };
-          g.dayEnds = g.voteSecs ? Date.now() + g.voteSecs * 1000 : null;
+          g.dayEnds = null;
           log(`🗳️ Ισοψηφία ανάμεσα σε ${s.top.map(nm).join(" και ")}. ${roundNo + 2}η ψηφοφορία: ξαναψηφίζουν οι υπόλοιποι, μόνο ανάμεσα σε αυτούς.`);
         } else if (!s.out) {
           log(roundNo && s.tie ? "🗳️ Ισοψηφία και στην 3η ψηφοφορία, οπότε δεν βγαίνει κανείς." : "🗳️ Δεν βγήκε κανείς.");
@@ -2341,12 +2359,13 @@ function renderFlow(){
   } else if (g.phase === "day") {
     title.textContent = `☀️ Μέρα ${g.day}`;
     sub.textContent = "";
-    if (g.dayEnds) { const c = document.createElement("span"); c.className = "clock"; c.id = "voteClock"; sub.appendChild(c); tickClock(); }
+    const talk = talking(g);
+    if (talk) { const c = document.createElement("span"); c.className = "clock"; c.id = "voteClock"; sub.appendChild(c); tickClock(); }
     const st = dayStatus(g, A);
     const mine = (A.vote || {})[me];
     const isCand = !!st.cands && st.cands.includes(me);
     aTitle.textContent = st.cands ? `⚖️ ${(g.runoff.n || 1) + 1}η ψηφοφορία` + (dead || isCand ? " (παρακολουθείς)" : "") : dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
-    aNote.textContent = st.cands ? `Ισοψηφία: ${st.cands.map(nameOf).join(" και ")}.` + (isCand ? " Ψηφίζουν οι υπόλοιποι." : "") : "";
+    aNote.textContent = st.cands ? `Ισοψηφία: ${st.cands.map(nameOf).join(" και ")}.` + (isCand ? " Ψηφίζουν οι υπόλοιποι." : "") : talk ? "Συζητήστε. Η ψηφοφορία ανοίγει όταν τελειώσει ο χρόνος." : "";
     const tallyEl = id => {
       const t = document.createElement("span"); t.className = "tally";
       const n = st.tally[id] || 0;
@@ -2366,7 +2385,7 @@ function renderFlow(){
       d.appendChild(t); box.appendChild(d);
     } else {
       if (votePickDay !== g.round + ":" + phaseKey(g)) { votePick = null; votePickDay = g.round + ":" + phaseKey(g); }
-      const locked = dead || isCand;
+      const locked = dead || isCand || talk;
       (st.cands || al).filter(id => id !== me).forEach(id =>
         box.appendChild(choiceBtn(nameOf(id), votePick === id, locked ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); })));
       if (votePick && !locked) {
@@ -2447,7 +2466,7 @@ function renderFlow(){
       else if (myRole === "doctor" && st2.docTurn && !st2.saves[me]) myTurn = true;
     } else if (g.phase === "day") {
       const cc = g.runoff ? Object.values(g.runoff.cands || {}) : null;
-      myTurn = !(A.vote || {})[me] && !(cc && cc.includes(me));
+      myTurn = !(A.vote || {})[me] && !(cc && cc.includes(me)) && !talking(g);
     } else if (g.phase === "kamikaze") {
       myTurn = me === g.kami && !(A.kami || {})[me];
     }
