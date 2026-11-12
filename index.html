@@ -388,7 +388,7 @@
       <input id="nameInput" maxlength="20" placeholder="Το username σου">
       <button type="submit" id="joinBtn">Μπαίνω</button>
     </form>
-    <button type="button" class="photoopt" data-photo="lib">
+    <button type="button" class="photoopt" data-photo="ask">
       <span class="av" id="avPreview">📷</span>
       <span><span id="avPickText">Πρόσθεσε φωτογραφία</span> <span class="note">(προαιρετικό)</span></span>
     </button>
@@ -396,7 +396,7 @@
   </div>
 
   <div class="card hidden" id="waitCard">
-    <button type="button" class="photoopt" data-photo="lib" style="margin:0 0 12px">
+    <button type="button" class="photoopt" data-photo="ask" style="margin:0 0 12px">
       <span class="av lg" id="avMine"></span>
       <span class="note">Άλλαξε φωτογραφία</span>
     </button>
@@ -1271,6 +1271,8 @@ const showPreview = (el, url) => { el.textContent = ""; if (url) { const i = doc
 // 📸 Selfie (μπροστινή κάμερα) ή 🖼️ από τη συλλογή
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-photo]"); if (!b) return;
+  if (b.dataset.photo === "ask") { openSheet("photo"); return; }
+  if (sheetKind === "photo") closeSheet();
   $(b.dataset.photo === "cam" ? "photoCam" : "photoInput").click();
 });
 async function onPhotoPicked(input){
@@ -1309,6 +1311,15 @@ function renderSheet(){
   if (!sheetKind) return;
   const body = $("sheetBody"); body.textContent = "";
   $("sheet").classList.remove("hidden");
+
+  if (sheetKind === "photo") {
+    $("sheetTitle").textContent = "Φωτογραφία";
+    const g = group(body); const st = mk("div", "stack");
+    const c = mk("button", "big", "📷 Τράβηξε φωτογραφία"); c.type = "button"; c.dataset.photo = "cam";
+    const l = mk("button", "ghost big", "🖼️ Διάλεξε από τη συλλογή"); l.type = "button"; l.dataset.photo = "lib";
+    st.append(c, l); g.appendChild(st);
+    return;
+  }
 
   if (sheetKind === "settings") {
     $("sheetTitle").textContent = "⚙️ Ρυθμίσεις";
