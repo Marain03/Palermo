@@ -80,6 +80,14 @@
   .intel b{color:var(--red2)}
   .team{display:inline-block;margin-top:8px;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
   .tapnote{color:var(--muted);font-size:13px;margin-top:14px}
+  .guide h3,.rulesBody h3{font-family:"Noto Serif",serif;font-size:15px;color:var(--gold);margin:16px 0 6px}
+  .guide h3:first-child{margin-top:0}
+  .guide p,.rulesBody p{margin:0 0 8px;font-size:15px;line-height:1.55}
+  .guide ul{margin:0;padding-left:20px;list-style:disc}
+  .guide li{font-size:15px;line-height:1.5;margin-bottom:6px}
+  .rules{margin-top:14px}
+  .rules summary{cursor:pointer;font-weight:600;font-size:15px}
+  .rulesBody{margin-top:8px}
 
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
@@ -173,9 +181,27 @@
         <div class="rolelabel" id="roleFor"></div>
         <div class="rolename" id="roleName"></div>
         <div class="intel" id="roleIntel"></div>
-        <div class="tapnote">Πάτα ξανά για να κρυφτεί.</div>
+        <div class="tapnote">Από κάτω εξηγείται αναλυτικά ο ρόλος σου. Πάτα ξανά την κάρτα για να κρυφτούν όλα.</div>
       </div>
     </div>
+    <div id="roleGuide" class="card guide hidden" style="margin-top:14px"></div>
+    <details class="card rules">
+      <summary>📖 Πώς παίζεται το Παλέρμο</summary>
+      <div class="rulesBody">
+        <h3>Ρόλοι σε αυτό το παιχνίδι</h3>
+        <p id="inPlay"></p>
+        <h3>Η ροή</h3>
+        <p><b>Νύχτα:</b> όλοι κλείνουν τα μάτια. Οι δολοφόνοι διαλέγουν ποιον θα σκοτώσουν και ο Γιατρός ποιον θα προστατέψει.</p>
+        <p><b>Μέρα:</b> ανακοινώνεται ποιος πέθανε. Όλοι συζητούν, κατηγορούν, υπερασπίζονται τον εαυτό τους και στο τέλος ψηφίζουν ποιον θα βγάλουν από το παιχνίδι.</p>
+        <p>Αυτό επαναλαμβάνεται μέχρι να κερδίσει κάποια ομάδα. Όποιος βγαίνει δεν μιλάει πια για το παιχνίδι.</p>
+        <h3>Ποιος κερδίζει</h3>
+        <p><b>Η Πόλη:</b> όταν βγουν και οι δύο δολοφόνοι.</p>
+        <p><b>Οι Δολοφόνοι:</b> όταν μείνουν όσοι και οι υπόλοιποι ζωντανοί παίκτες.</p>
+        <p><b>Η Τρέλα:</b> αν την ψηφίσουν να βγει.</p>
+        <h3>Ποιος ξέρει τι</h3>
+        <p>Οι δύο δολοφόνοι ξέρουν ο ένας τον άλλον. Ο Αστυνομικός ξέρει τον Φανερό Δολοφόνο. Η Πουτάνα ξέρει και τους δύο.</p>
+      </div>
+    </details>
     <div id="hostGame" style="margin-top:14px"></div>
   </div>
 
@@ -242,21 +268,68 @@ if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes("PASTE"))
   throw new Error("Firebase config missing");
 }
 
-// ---- Οι 10 ρόλοι ----
-const ROLES = [
-  { id:"killerOpen",   name:"Φανερός Δολοφόνος", team:"Δολοφόνοι" },
-  { id:"killerHidden", name:"Κρυφός Δολοφόνος",  team:"Δολοφόνοι" },
-  { id:"cop",          name:"Αστυνομικός",       team:"Πόλη" },
-  { id:"whore",        name:"Πουτάνα",           team:"Πόλη" },
-  { id:"mayor",        name:"Δήμαρχος",          team:"Πόλη" },
-  { id:"doctor",       name:"Γιατρός",           team:"Πόλη" },
-  { id:"kamikaze",     name:"Καμικάζι",          team:"Πόλη" },
-  { id:"crazy",        name:"Τρέλα",             team:"Πόλη" },
-  { id:"citizen",      name:"Πολίτης",           team:"Πόλη" },
-  { id:"citizen",      name:"Πολίτης",           team:"Πόλη" },
-];
-const ROLE_BY_ID = Object.fromEntries(ROLES.map(r => [r.id, r]));
-const NEEDED = ROLES.length;
+// ---- Οι ρόλοι ----
+// Η σειρά μετράει: με Ν παίκτες μοιράζονται οι πρώτοι Ν ρόλοι της λίστας.
+// 6: 2 δολοφόνοι, Αστυνομικός, Γιατρός, Πουτάνα, Πολίτης · 7: +Δήμαρχος · 8: +Καμικάζι · 9: +Τρέλα · 10: +Πολίτης
+const ROLE_ORDER = ["killerOpen","killerHidden","cop","doctor","whore","citizen","mayor","kamikaze","crazy","citizen"];
+const MIN_PLAYERS = 6, MAX_PLAYERS = ROLE_ORDER.length;
+const ROLE_BY_ID = {
+  killerOpen: {
+    name:"Φανερός Δολοφόνος", team:"Δολοφόνοι",
+    does:"Κάθε νύχτα, μαζί με τον Κρυφό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪 Δολοφόνοι, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη, συζητάς και ψηφίζεις όπως όλοι.",
+    goal:"Να μείνετε ζωντανοί εσείς οι δύο μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
+    tips:["Ο Αστυνομικός και η Πουτάνα ξέρουν ποιος είσαι. Είσαι ο πιο εκτεθειμένος από τους δύο.","Προσπάθησε να καταλάβεις ποιος σε υποψιάζεται «υπερβολικά σωστά»: μάλλον είναι ο Αστυνομικός ή η Πουτάνα. Αυτοί είναι οι πρώτοι σας στόχοι.","Μην υπερασπίζεσαι φανερά τον Κρυφό, για να μην τον «κάψεις»."]
+  },
+  killerHidden: {
+    name:"Κρυφός Δολοφόνος", team:"Δολοφόνοι",
+    does:"Κάθε νύχτα, μαζί με τον Φανερό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪 Δολοφόνοι. Τη μέρα παριστάνεις τον αθώο πολίτη.",
+    goal:"Να μείνετε ζωντανοί μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
+    tips:["Ο Αστυνομικός ΔΕΝ ξέρει ποιος είσαι. Μόνο η Πουτάνα σε ξέρει.","Είσαι το κρυφό χαρτί της ομάδας. Αν πέσει ο Φανερός, συνεχίζεις μόνος σου.","Καμιά φορά βοηθάει να ψηφίσεις κι εσύ τον Φανερό, για να φανείς αθώος."]
+  },
+  cop: {
+    name:"Αστυνομικός", team:"Πόλη",
+    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Η δουλειά σου είναι να πείσεις την Πόλη να τον ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Αν οι δολοφόνοι καταλάβουν ποιος είσαι, θα σε σκοτώσουν την επόμενη νύχτα. Κατηγόρησε με τρόπο που να μοιάζει με απλή υποψία.","Δεν ξέρεις τον Κρυφό. Πρόσεξε ποιος υπερασπίζεται τον Φανερό.","Η Πουτάνα ξέρει κι αυτή τον Φανερό. Αν δεις κάποιον να κατηγορεί σωστά, ίσως είναι σύμμαχος."]
+  },
+  whore: {
+    name:"Πουτάνα", team:"Πόλη",
+    does:"Ξέρεις από την αρχή ποιοι είναι ΚΑΙ οι δύο δολοφόνοι. Είσαι με την Πόλη και πρέπει να την καθοδηγήσεις να τους βγάλει.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Είσαι ο πιο πολύτιμος παίκτης της Πόλης, αλλά αν φανεί τι ξέρεις, θα σε σκοτώσουν αμέσως.","Μην τα πεις όλα με τη μία. Σπρώξε σιγά σιγά τις ψήφους προς τους σωστούς.","Ο Αστυνομικός ξέρει μόνο τον Φανερό. Εσύ είσαι η μόνη που ξέρει τον Κρυφό."]
+  },
+  doctor: {
+    name:"Γιατρός", team:"Πόλη",
+    does:"Κάθε νύχτα διαλέγεις κρυφά έναν παίκτη να προστατέψεις. Αν οι δολοφόνοι διαλέξουν τον ίδιο, δεν πεθαίνει.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Προστάτεψε όποιον φαίνεται ότι ξέρει κάτι (πιθανός Αστυνομικός ή Πουτάνα). Αυτούς θα κυνηγήσουν οι δολοφόνοι.","Αν σώσεις κάποιον, μην το πεις αμέσως, γιατί θα αποκαλυφθείς.","Το αν μπορείς να σώσεις τον εαυτό σου ή τον ίδιο παίκτη δύο νύχτες στη σειρά το ορίζει η παρέα."]
+  },
+  mayor: {
+    name:"Δήμαρχος", team:"Πόλη",
+    does:"Στις ψηφοφορίες της μέρας η ψήφος σου μετράει διπλή.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Η διπλή ψήφος κρίνει τις κλειστές ψηφοφορίες. Χρησιμοποίησέ τη όταν είσαι σίγουρος.","Αν αποκαλυφθείς, γίνεσαι στόχος των δολοφόνων. Διάλεξε καλά τη στιγμή."]
+  },
+  kamikaze: {
+    name:"Καμικάζι", team:"Πόλη",
+    does:"Αν σε βγάλει η ψηφοφορία της μέρας, παίρνεις μαζί σου όποιον παίκτη θέλεις: βγαίνει κι εκείνος από το παιχνίδι.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Κράτα στο μυαλό σου ποιον υποψιάζεσαι περισσότερο, για να τον πάρεις μαζί σου.","Καμιά φορά αξίζει να φανείς λίγο ύποπτος επίτηδες: αν σε βγάλουν, παίρνεις έναν δολοφόνο."]
+  },
+  crazy: {
+    name:"Τρέλα", team:"Μόνη της",
+    does:"Δεν είσαι ούτε με την Πόλη ούτε με τους δολοφόνους. Κερδίζεις αν καταφέρεις να σε βγάλουν στην ψηφοφορία της μέρας.",
+    goal:"Να σε ψηφίσουν να βγεις.",
+    tips:["Φέρσου ύποπτα, αλλά όχι τόσο που να καταλάβουν ότι το κάνεις επίτηδες.","Αν σε σκοτώσουν οι δολοφόνοι τη νύχτα, χάνεις."]
+  },
+  citizen: {
+    name:"Πολίτης", team:"Πόλη",
+    does:"Δεν έχεις ειδική δύναμη. Παρατηρείς, συζητάς και ψηφίζεις. Οι πολίτες είναι η πλειοψηφία και η ψήφος τους κρίνει το παιχνίδι.",
+    goal:"Να βγουν και οι δύο δολοφόνοι.",
+    tips:["Πρόσεξε ποιος αλλάζει γνώμη εύκολα ή ψηφίζει πάντα «μαζί» με κάποιον.","Μπορείς να μπλοφάρεις ότι έχεις σημαντικό ρόλο, για να τραβήξεις τους δολοφόνους πάνω σου."]
+  }
+};
+const rolesFor = n => ROLE_ORDER.slice(0, n);
 const KILLERS = ["killerOpen", "killerHidden"];
 // Τι γνωρίζει κάθε ρόλος
 const KNOWS = {
@@ -348,12 +421,12 @@ function showLobby(){
   $("inProgressCard").classList.toggle("hidden", !(playing && !joined));
   if (joined) $("myName").textContent = players[pid].name;
   if (joined && playing) $("waitNote").textContent = "Το παιχνίδι ξεκίνησε χωρίς εσένα. Περίμενε τον επόμενο γύρο.";
-  else $("waitNote").textContent = `Περιμένουμε να μπουν όλοι (${list.length}/${NEEDED}). Όταν μπουν και οι ${NEEDED}, ο host ξεκινά το παιχνίδι και θα δεις τον ρόλο σου εδώ.`;
+  else $("waitNote").textContent = `Είμαστε ${list.length}. Χρειάζονται τουλάχιστον ${MIN_PLAYERS} παίκτες (μέχρι ${MAX_PLAYERS}). Όταν ο host ξεκινήσει το παιχνίδι, θα δεις τον ρόλο σου εδώ.`;
 
-  const full = list.length >= NEEDED;
+  const full = list.length >= MAX_PLAYERS;
   $("nameInput").disabled = full;
   $("joinBtn").disabled = full;
-  if (full && !joined && !playing) $("joinMsg").textContent = "Το τραπέζι είναι γεμάτο (10 παίκτες).";
+  if (full && !joined && !playing) $("joinMsg").textContent = "Το τραπέζι είναι γεμάτο (" + MAX_PLAYERS + " παίκτες).";
 
   const ul = $("playerList"); ul.textContent = "";
   if (!list.length) {
@@ -374,7 +447,7 @@ function showLobby(){
     }
     ul.appendChild(li);
   });
-  $("countLabel").textContent = list.length + " / " + NEEDED;
+  $("countLabel").textContent = `${list.length} (ελάχ. ${MIN_PLAYERS}, μέγ. ${MAX_PLAYERS})`;
 
   renderHost($("hostLobby"));
 }
@@ -401,6 +474,7 @@ function showGame(roleId){
   });
   const t = document.createElement("div"); t.className = "team"; t.textContent = "Ομάδα: " + role.team;
   intel.appendChild(t);
+  renderGuide(roleId);
   applyRoleOpen();
 
   // Chats: re-subscribe when the round changes
@@ -417,7 +491,30 @@ function showGame(roleId){
   renderHost($("hostGame"));
 }
 
+function renderGuide(roleId){
+  const role = ROLE_BY_ID[roleId];
+  const g = $("roleGuide"); g.textContent = "";
+  const sec = (title, text) => {
+    const h = document.createElement("h3"); h.textContent = title; g.appendChild(h);
+    const p = document.createElement("p"); p.textContent = text; g.appendChild(p);
+  };
+  sec("Τι κάνεις", role.does);
+  sec("Ο στόχος σου", role.goal);
+  const h = document.createElement("h3"); h.textContent = "Συμβουλές"; g.appendChild(h);
+  const ul = document.createElement("ul");
+  role.tips.forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+  g.appendChild(ul);
+
+  // Ρόλοι που παίζουν σε αυτό το παιχνίδι
+  const counts = {};
+  Object.values(game.roles || {}).forEach(id => counts[id] = (counts[id] || 0) + 1);
+  $("inPlay").textContent = ROLE_ORDER.filter((id, i, a) => a.indexOf(id) === i && counts[id])
+    .map(id => ROLE_BY_ID[id].name + (counts[id] > 1 ? " ×" + counts[id] : "")).join(" · ")
+    + ` (${Object.keys(game.roles || {}).length} παίκτες)`;
+}
+
 function applyRoleOpen(){
+  $("roleGuide").classList.toggle("hidden", !roleOpen);
   $("roleCard").classList.toggle("closed", !roleOpen);
   $("roleClosed").classList.toggle("hidden", roleOpen);
   $("roleOpen").classList.toggle("hidden", !roleOpen);
@@ -492,7 +589,7 @@ $("joinForm").addEventListener("submit", async e => {
     const res = await runTransaction(R("players"), cur => {
       cur = cur || {};
       const others = Object.entries(cur).filter(([id]) => id !== pid);
-      if (others.length >= NEEDED) { reason = "Το τραπέζι είναι γεμάτο (10 παίκτες)."; return; }
+      if (others.length >= MAX_PLAYERS) { reason = `Το τραπέζι είναι γεμάτο (${MAX_PLAYERS} παίκτες).`; return; }
       if (others.some(([, p]) => (p.name || "").toLowerCase() === name.toLowerCase())) { reason = "Αυτό το username υπάρχει ήδη."; return; }
       reason = "";
       cur[pid] = { name, ts: Date.now() };
@@ -519,12 +616,13 @@ function renderHost(container){
   const playing = game && game.status === "playing";
 
   act("start").classList.toggle("hidden", playing);
-  act("start").disabled = count !== NEEDED;
+  const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS;
+  act("start").disabled = !ok;
   el("hostMsg").textContent = playing
     ? `Γύρος ${game.round} σε εξέλιξη. Κανείς δεν βλέπει τους ρόλους των άλλων.`
-    : count === NEEDED ? "Είναι όλοι εδώ! Πάτα για να μοιραστούν οι ρόλοι."
-    : count > NEEDED ? `Είναι ${count} παίκτες, βγάλε ${count - NEEDED} με το ×.`
-    : `Περιμένουμε ακόμα ${NEEDED - count} παίκτες (${count}/${NEEDED}).`;
+    : count > MAX_PLAYERS ? `Είναι ${count} παίκτες, βγάλε ${count - MAX_PLAYERS} με το ×.`
+    : count < MIN_PLAYERS ? `Χρειάζονται ακόμα ${MIN_PLAYERS - count} παίκτες για να ξεκινήσει (${count}/${MIN_PLAYERS}).`
+    : `Είστε ${count}. Πάτα όταν είναι όλοι μέσα. Μπορούν να μπουν μέχρι ${MAX_PLAYERS}.`;
   act("newRound").classList.toggle("hidden", !playing);
   el("confirm").classList.toggle("hidden", !pendingConfirm);
 
@@ -542,11 +640,11 @@ function renderHost(container){
 
 async function deal(force){
   const ids = sortedPlayers().map(p => p.id);
-  if (ids.length !== NEEDED) return;
+  if (ids.length < MIN_PLAYERS || ids.length > MAX_PLAYERS) return;
   const prevRound = (game && game.round) || 0;
   const res = await runTransaction(R("game"), cur => {
     if (!force && cur && cur.status === "playing") return;      // κάποιος άλλος πρόλαβε
-    const picked = shuffle(ROLES.map(r => r.id));
+    const picked = shuffle(rolesFor(ids.length));
     const roles = {};
     ids.forEach((id, i) => roles[id] = picked[i]);
     return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles };
