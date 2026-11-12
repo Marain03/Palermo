@@ -54,6 +54,7 @@
       radial-gradient(1px 1px at 8% 40%, #ffffff55, transparent 60%),
       radial-gradient(1px 1px at 72% 44%, #ffffff55, transparent 60%),
       radial-gradient(600px 380px at 85% -6%, rgba(235,182,75,.13), transparent 70%),
+      radial-gradient(520px 380px at -5% 105%, rgba(194,65,79,.16), transparent 70%),
       linear-gradient(180deg, #121A33 0%, var(--bg) 55%);
     opacity:1}
   body::after{
@@ -117,7 +118,8 @@
 
   /* ---------- Οθόνη παιχνιδιού ---------- */
   #game{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
-  .gtop{display:flex;align-items:baseline;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 10px}
+  .gtop{display:flex;align-items:baseline;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 10px;
+    border-bottom:1px solid rgba(194,65,79,.22);margin-bottom:6px}
   .gtop .t{font-family:var(--serif);letter-spacing:.16em;font-size:20px}
   .gtop .who{color:var(--muted);font-size:14px}
   .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 14px 14px}
@@ -129,6 +131,7 @@
   .tab .ic{font-size:19px;line-height:1;filter:grayscale(.5);opacity:.85}
   .tab:hover{background:var(--raise)}
   .tab.on{color:var(--text);background:var(--raise)}
+  .tab.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--wine)}
   .tab.on .ic{filter:none;opacity:1}
   .tab .dot{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--wine);box-shadow:0 0 0 2px var(--bg2)}
 
@@ -143,16 +146,16 @@
   /* Πίσω όψη (κρυμμένος ρόλος) */
   .rolecard.closed{background:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4c4 6 4 10 0 16c-4-6-4-10 0-16zM20 36c4-6 4-10 0-16c-4 6-4 10 0 16zM4 20c6-4 10-4 16 0c-6 4-10 4-16 0zM36 20c-6-4-10-4-16 0c6 4 10 4 16 0z' fill='%23ffffff14'/%3E%3C/svg%3E") 0 0/44px 44px,
-      linear-gradient(160deg,#13294A,#0B1A33);
-    color:#E6EEF6;border-color:#2D4A78}
+      linear-gradient(160deg,#5A1A28,#2E0E17);
+    color:#F3E6E8;border-color:#7A2A3A}
   .rolecard.closed::before,.rolecard.closed::after{display:none}
   .rolecard.closed{padding-bottom:30px}
   .rolecard::before,.rolecard::after{width:60px;height:60px}
-  .rolecard.closed .rolelabel{color:#B7CDE2}
+  .rolecard.closed .rolelabel{color:#E3B9C0}
   .rolecard.closed .rolename{color:#F2C766;font-size:28px}
   /* τα περιεχόμενα των καρτελών να μη «ζουλιούνται» */
   .pane[data-pane="flow"] > *, .pane[data-pane="role"] > *, .pane[data-pane="hist"] > *{flex-shrink:0}
-  .rolecard.closed .tapnote{color:#B7CDE2}
+  .rolecard.closed .tapnote{color:#E3B9C0}
   .rolelabel{color:var(--card-muted);font-size:14px;font-family:var(--serif);font-style:italic}
   .rolename{font-family:var(--serif);font-size:40px;line-height:1.1;font-weight:400;color:var(--card-hi);margin-top:8px}
   .intel{margin:22px auto 0;max-width:340px;padding-top:16px;border-top:1px solid var(--card-line);font-size:15px;line-height:1.6}
@@ -178,6 +181,7 @@
   /* ---------- Συνομιλίες ---------- */
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+  .chatbox.killers .bubble:not(.mine){box-shadow:inset 3px 0 0 rgba(194,65,79,.55)}
   .chatbox.killers{border-color:color-mix(in srgb, var(--wine) 55%, var(--line));background:color-mix(in srgb, var(--wine-soft) 55%, var(--panel))}
   .spynote{margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
   .bubble{max-width:82%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--raise);align-self:flex-start;word-wrap:break-word}
@@ -193,6 +197,7 @@
   /* ---------- Φάση ---------- */
   .phasecard{text-align:center;padding:18px 16px 16px;background:transparent;border:0}
   .phTitle{font-family:var(--serif);font-size:30px;font-weight:400;color:var(--head);margin-bottom:4px}
+  .phTitle::after,header h1::after{content:"";display:block;width:38px;height:2px;margin:10px auto 0;border-radius:2px;background:var(--wine);opacity:.75}
   .phasecard .note{font-size:14px}
   .choices{display:grid;gap:8px}
   .choice{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
@@ -257,7 +262,7 @@
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
   .log li:last-child{border-bottom:0}
   .hblock{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin-bottom:14px}
-  .hblock.night{border-left-color:#3E4E8A}
+  .hblock.night{border-left-color:rgba(194,65,79,.7)}
   .hblock.day{border-left-color:#E0A526}
   .hblock h3{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head)}
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
