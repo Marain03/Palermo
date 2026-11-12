@@ -92,6 +92,7 @@
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
   .chatbox.killers{border-color:rgba(194,37,58,.6);background:#160d12}
+  .spynote{margin-top:10px;padding:12px;border-radius:12px;background:#1d1620;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
   .bubble{max-width:82%;padding:8px 12px;border-radius:14px;background:var(--panel2);align-self:flex-start;word-wrap:break-word}
   .bubble.mine{align-self:flex-end;background:#3a1720}
   .bubble .n{font-size:12px;font-weight:600;color:var(--gold);margin-bottom:2px}
@@ -244,6 +245,7 @@
 
   <div class="pane hidden" data-pane="killers">
     <div class="chatbox killers" id="chatKillers"><div class="chatempty">Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία.</div></div>
+    <div class="spynote hidden" id="spyNote">🕵️ Διαβάζεις κρυφά τη συνομιλία των δολοφόνων. Δεν μπορείς να γράψεις εδώ.</div>
     <form class="send" data-chat="killers" autocomplete="off">
       <input maxlength="300" placeholder="Γράψε στον συνεργό σου…">
       <button type="submit">Στείλε</button>
@@ -306,21 +308,21 @@ const MIN_PLAYERS = 6, MAX_PLAYERS = ROLE_ORDER.length;
 const ROLE_BY_ID = {
   killerOpen: {
     name:"Φανερός Δολοφόνος", team:"Δολοφόνοι",
-    does:"Κάθε νύχτα, μαζί με τον Κρυφό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪 Δολοφόνοι, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη, συζητάς και ψηφίζεις όπως όλοι.",
+    does:"Κάθε νύχτα, μαζί με τον Κρυφό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη, συζητάς και ψηφίζεις όπως όλοι.",
     goal:"Να μείνετε ζωντανοί εσείς οι δύο μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
     tips:["Ο Αστυνομικός και η Πουτάνα ξέρουν ποιος είσαι. Είσαι ο πιο εκτεθειμένος από τους δύο.","Προσπάθησε να καταλάβεις ποιος σε υποψιάζεται «υπερβολικά σωστά»: μάλλον είναι ο Αστυνομικός ή η Πουτάνα. Αυτοί είναι οι πρώτοι σας στόχοι.","Μην υπερασπίζεσαι φανερά τον Κρυφό, για να μην τον «κάψεις»."]
   },
   killerHidden: {
     name:"Κρυφός Δολοφόνος", team:"Δολοφόνοι",
-    does:"Κάθε νύχτα, μαζί με τον Φανερό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪 Δολοφόνοι. Τη μέρα παριστάνεις τον αθώο πολίτη.",
+    does:"Κάθε νύχτα, μαζί με τον Φανερό Δολοφόνο, διαλέγετε ποιον θα σκοτώσετε. Συνεννοηθείτε στην καρτέλα 🔪, που τη βλέπετε μόνο εσείς οι δύο. Τη μέρα παριστάνεις τον αθώο πολίτη.",
     goal:"Να μείνετε ζωντανοί μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
     tips:["Ο Αστυνομικός ΔΕΝ ξέρει ποιος είσαι. Μόνο η Πουτάνα σε ξέρει.","Είσαι το κρυφό χαρτί της ομάδας. Αν πέσει ο Φανερός, συνεχίζεις μόνος σου.","Καμιά φορά βοηθάει να ψηφίσεις κι εσύ τον Φανερό, για να φανείς αθώος."]
   },
   cop: {
     name:"Αστυνομικός", team:"Πόλη",
-    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Η δουλειά σου είναι να πείσεις την Πόλη να τον ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
+    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Επιπλέον, στην καρτέλα 🔪 διαβάζεις κρυφά τη συνομιλία των δολοφόνων (χωρίς να μπορείς να γράψεις). Η δουλειά σου είναι να πείσεις την Πόλη να τους ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
-    tips:["Αν οι δολοφόνοι καταλάβουν ποιος είσαι, θα σε σκοτώσουν την επόμενη νύχτα. Κατηγόρησε με τρόπο που να μοιάζει με απλή υποψία.","Δεν ξέρεις τον Κρυφό. Πρόσεξε ποιος υπερασπίζεται τον Φανερό.","Η Πουτάνα ξέρει κι αυτή τον Φανερό. Αν δεις κάποιον να κατηγορεί σωστά, ίσως είναι σύμμαχος."]
+    tips:["Αν οι δολοφόνοι καταλάβουν ποιος είσαι, θα σε σκοτώσουν την επόμενη νύχτα. Κατηγόρησε με τρόπο που να μοιάζει με απλή υποψία.","Δεν σου λέει κανείς ποιος είναι ο Κρυφός, αλλά από τη συνομιλία των δολοφόνων μπορεί να το καταλάβεις. Πρόσεξε όμως: αν δείξεις ότι ξέρεις τι λένε, θα καταλάβουν ποιος είσαι.","Η Πουτάνα ξέρει κι αυτή τον Φανερό. Αν δεις κάποιον να κατηγορεί σωστά, ίσως είναι σύμμαχος."]
   },
   whore: {
     name:"Πουτάνα", team:"Πόλη",
@@ -496,10 +498,14 @@ function showGame(roleId){
   $("game").classList.remove("hidden");
   const role = ROLE_BY_ID[roleId];
   const isKiller = KILLERS.includes(roleId);
+  const isSpy = roleId === "cop";                 // ο Αστυνομικός διαβάζει κρυφά
+  const seesKillers = isKiller || isSpy;
+  $("spyNote").classList.toggle("hidden", !isSpy);
+  document.querySelector('form[data-chat="killers"]').classList.toggle("hidden", !isKiller);
 
   $("gameWho").textContent = nameOf(pid);
-  $("killersTab").classList.toggle("hidden", !isKiller);
-  if (!isKiller && tab === "killers") setTab("role");
+  $("killersTab").classList.toggle("hidden", !seesKillers);
+  if (!seesKillers && tab === "killers") setTab("role");
 
   // Role card
   $("roleFor").textContent = nameOf(pid) + ", είσαι";
@@ -522,9 +528,9 @@ function showGame(roleId){
     chatRound = game.round;
     roleOpen = false; applyRoleOpen();
     startChat("all", $("chatAll"), "dotAll");
-    if (isKiller) startChat("killers", $("chatKillers"), "dotKillers");
+    if (seesKillers) startChat("killers", $("chatKillers"), "dotKillers");
     startDMs();
-  } else if (isKiller && !chatSubs.killers) {
+  } else if (seesKillers && !chatSubs.killers) {
     startChat("killers", $("chatKillers"), "dotKillers");
   }
 
