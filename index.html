@@ -54,7 +54,7 @@
       radial-gradient(1px 1px at 8% 40%, #ffffff55, transparent 60%),
       radial-gradient(1px 1px at 72% 44%, #ffffff55, transparent 60%),
       radial-gradient(600px 380px at 85% -6%, rgba(235,182,75,.13), transparent 70%),
-      radial-gradient(520px 380px at -5% 105%, rgba(194,65,79,.16), transparent 70%),
+      radial-gradient(520px 380px at -5% 105%, rgba(60,90,170,.14), transparent 70%),
       linear-gradient(180deg, #121A33 0%, var(--bg) 55%);
     opacity:1}
   body::after{
@@ -150,7 +150,7 @@
   /* ---------- Οθόνη παιχνιδιού ---------- */
   #game{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
   .gtop{display:flex;align-items:baseline;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 10px;
-    border-bottom:1px solid rgba(194,65,79,.22);margin-bottom:6px}
+    border-bottom:1px solid rgba(235,182,75,.22);margin-bottom:6px}
   .gtop .t{font-family:var(--serif);letter-spacing:.16em;font-size:20px}
   .gtop .who{color:var(--muted);font-size:14px}
   .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 14px 14px}
@@ -212,7 +212,7 @@
   /* ---------- Συνομιλίες ---------- */
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
-  .chatbox.killers .bubble:not(.mine){box-shadow:inset 3px 0 0 rgba(194,65,79,.55)}
+  .chatbox.killers .bubble:not(.mine){box-shadow:inset 3px 0 0 rgba(235,182,75,.55)}
   .chatbox.killers{border-color:color-mix(in srgb, var(--wine) 55%, var(--line));background:color-mix(in srgb, var(--wine-soft) 55%, var(--panel))}
   .spynote{margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
   .bubble{max-width:82%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--raise);align-self:flex-start;word-wrap:break-word}
@@ -293,7 +293,7 @@
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
   .log li:last-child{border-bottom:0}
   .hblock{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin-bottom:14px}
-  .hblock.night{border-left-color:rgba(194,65,79,.7)}
+  .hblock.night{border-left-color:rgba(120,150,220,.7)}
   .hblock.day{border-left-color:#E0A526}
   .hblock h3{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head)}
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
@@ -358,7 +358,7 @@
   <div class="card" id="joinCard">
     <h2>Μπες στο τραπέζι</h2>
     <div class="avrow">
-      <span class="av lg" id="avPreview">📷</span>
+      <span class="av lg" id="avPreview" data-photo="cam" style="cursor:pointer" role="button" aria-label="Τράβηξε selfie">📷</span>
       <div class="avbtns">
         <button type="button" class="ghost small" data-photo="cam">📸 Selfie</button>
         <button type="button" class="ghost small" data-photo="lib">🖼️ Συλλογή</button>
@@ -762,11 +762,11 @@ function onlineDot(id){
 
 // ---- ⚙️ Ρυθμίσεις (αποθηκεύονται σε αυτή τη συσκευή) ----
 const SETTINGS_KEY = "palermo.settings";
-let settings = { vibrate: true, wake: true, big: false };
+let settings = { vibrate: true, wake: true };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); } catch (e) {}
 function saveSettings(){ try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {} applySettings(); }
 function applySettings(){
-  document.body.classList.toggle("big", !!settings.big);
+  document.body.classList.remove("big");
   if (!settings.wake && wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
 }
 
@@ -1228,16 +1228,6 @@ function renderSheet(){
     };
     row("Δόνηση όταν είναι η σειρά μου", "vibrate");
     row("Η οθόνη να μένει ανοιχτή", "wake");
-    row("Μεγάλα γράμματα", "big");
-    if (players[pid]) {
-      const ph = group(body, "Η φωτογραφία μου");
-      const r2 = mk("div", "avrow"); r2.style.margin = "0";
-      r2.appendChild(avatarEl(pid, "lg"));
-      const bs = mk("div", "avbtns");
-      const b1 = mk("button", "ghost small", "📸 Selfie"); b1.type = "button"; b1.dataset.photo = "cam";
-      const b2 = mk("button", "ghost small", "🖼️ Συλλογή"); b2.type = "button"; b2.dataset.photo = "lib";
-      bs.append(b1, b2); r2.appendChild(bs); ph.appendChild(r2);
-    }
     const more = group(body);
     const rules = mk("button", "ghost big", "📖 Πώς παίζεται το Παλέρμο"); rules.type = "button";
     rules.onclick = () => {
