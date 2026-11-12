@@ -179,6 +179,7 @@
   .sys{align-self:center;color:var(--muted);font-size:12px;text-align:center}
   .send{display:flex;gap:8px;margin-top:10px}
   .chatempty{color:var(--muted);text-align:center;margin:auto;font-size:14px;max-width:260px}
+  .chatempty:empty{display:none}
 
   /* ---------- Φάση ---------- */
   .phasecard{text-align:center;padding:18px 16px 16px;background:transparent;border:0}
@@ -537,7 +538,7 @@ const ROLE_BY_ID = {
   },
   cop: {
     name:"Αστυνομικός", team:"Πόλη",
-    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Επιπλέον, στην καρτέλα 🔪 διαβάζεις κρυφά τη συνομιλία των δολοφόνων. Βλέπεις τα μηνύματα αλλά όχι ποιος τα έγραψε, και δεν μπορείς να γράψεις. Η δουλειά σου είναι να πείσεις την Πόλη να τους ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
+    does:"Ξέρεις από την αρχή ποιος είναι ο Φανερός Δολοφόνος. Επιπλέον, στην καρτέλα 🔪 διαβάζεις κρυφά τη συνομιλία των δολοφόνων. Η δουλειά σου είναι να πείσεις την Πόλη να τους ψηφίσει, χωρίς να φανεί ότι είσαι ο Αστυνομικός.",
     goal:"Να βγουν και οι δύο δολοφόνοι.",
     tips:["Αν οι δολοφόνοι καταλάβουν ποιος είσαι, θα σε σκοτώσουν την επόμενη νύχτα. Κατηγόρησε με τρόπο που να μοιάζει με απλή υποψία.","Δεν σου λέει κανείς ποιος είναι ο Κρυφός, αλλά από τη συνομιλία των δολοφόνων μπορεί να το καταλάβεις. Πρόσεξε όμως: αν δείξεις ότι ξέρεις τι λένε, θα καταλάβουν ποιος είσαι.","Η Πουτάνα ξέρει κι αυτή τον Φανερό. Αν δεις κάποιον να κατηγορεί σωστά, ίσως είναι σύμμαχος."]
   },
@@ -799,7 +800,7 @@ function showGame(roleId){
   const isKiller = KILLERS.includes(roleId);
   const isSpy = roleId === "cop";                 // ο Αστυνομικός διαβάζει κρυφά
   const seesKillers = isKiller || isSpy;
-  $("spyNote").classList.toggle("hidden", !isSpy);
+  $("spyNote").classList.add("hidden");
   document.querySelector('form[data-chat="killers"]').classList.toggle("hidden", !isKiller);
 
   $("gameWho").textContent = nameOf(pid);
@@ -1022,7 +1023,9 @@ $("dmForm").addEventListener("submit", e => {
 function startChat(key, box, dotId){
   box.textContent = "";
   const empty = document.createElement("div"); empty.className = "chatempty";
-  empty.textContent = key === "killers" ? "Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία." : "Κανένα μήνυμα ακόμα. Πες ένα γεια.";
+  empty.textContent = key === "killers"
+    ? (KILLERS.includes(eff(game, pid)) ? "Μόνο οι δύο δολοφόνοι βλέπουν αυτή τη συνομιλία." : "")
+    : "Κανένα μήνυμα ακόμα. Πες ένα γεια.";
   box.appendChild(empty);
   const q = query(R(chatPath(key)), limitToLast(300));
   chatSubs[key] = onChildAdded(q, snap => {
