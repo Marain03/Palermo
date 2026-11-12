@@ -118,6 +118,15 @@
   .partner b{color:var(--red2)}
   .dead .pname{text-decoration:line-through;color:var(--muted)}
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+  .hblock{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#120f16}
+  .hblock.night{border-color:#2b3456;background:#10121c}
+  .hblock.day{border-color:#4f3f22;background:#16120d}
+  .hblock h3{margin:0 0 6px;font-family:"Noto Serif",serif;font-size:15px;color:var(--gold)}
+  .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
+  .hvotes{display:grid;grid-template-columns:1fr auto 1fr;gap:2px 8px;font-size:14px;margin:4px 0 6px}
+  .hvotes .ar{color:var(--muted)}
+  .hres{font-weight:600}
+  .hres b{color:var(--red2)}
   .log li:last-child{border-bottom:0}
   .reveal li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
   .reveal li span:last-child{color:var(--gold);font-weight:600}
@@ -225,8 +234,13 @@
       <ul class="players" id="aliveList"></ul>
     </div>
     <div class="card">
-      <h2>Τι έχει γίνει</h2>
-      <ul class="log" id="logList"></ul>
+      <h2>📜 Ιστορικό</h2>
+      <p class="note" style="margin-top:-6px">Ό,τι έγινε φανερά σε κάθε γύρο: ποιος πέθανε, ποιος ψήφισε ποιον, ποιος βγήκε.</p>
+      <div id="histList"></div>
+      <details class="rules" style="margin-top:12px">
+        <summary>Όλες οι ανακοινώσεις</summary>
+        <ul class="log" id="logList" style="margin-top:8px"></ul>
+      </details>
     </div>
   </div>
 
@@ -1002,6 +1016,8 @@ async function tryResolve(force){
       g.log = Object.values(g.log || {});
       const log = t => g.log.push({ t, ts: Date.now() });
       const nm = id => nameOf(id);
+      g.history = Object.values(g.history || {});
+      const hist = e => g.history.push(Object.assign({ ts: Date.now() }, e));
 
       if (g.phase === "night") {
         const s = nightStatus(g, A);
@@ -1017,6 +1033,7 @@ async function tryResolve(force){
         if (tgt && !saved.includes(tgt) && !deadIn(g, tgt) && eff(g, tgt) !== "batman") {
           g.dead[tgt] = true; deaths.push(tgt);
         }
+        hist({ k: "night", day: g.day, died: deaths.length ? deaths : null });
         if (deaths.length === 1) log(`🌅 Ξημέρωσε. Τη νύχτα πέθανε ο/η ${nm(deaths[0])}.`);
         else if (deaths.length > 1) log(`🌅 Ξημέρωσε. Τη νύχτα πέθαναν: ${deaths.map(nm).join(", ")}.`);
         else log("🌅 Ξημέρωσε. Κανείς δεν πέθανε απόψε!");
@@ -1024,6 +1041,11 @@ async function tryResolve(force){
 
       } else if (g.phase === "day") {
         const s = dayStatus(g, A);
+        const votesMap = {};
+        aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v)) votesMap[id] = v; });
+        const outRole = s.out ? eff(g, s.out) : null;
+        hist({ k: "day", day: g.day, votes: votesMap, dbl: s.mayorDoubled.length ? s.mayorDoubled : null,
+               out: s.out || null, note: outRole === "crazy" ? "crazy" : outRole === "kamikaze" ? "kamikaze" : null });
         if (s.mayorDoubled.length) {
           g.mayorUsed = g.mayorUsed || {};
           s.mayorDoubled.forEach(id => g.mayorUsed[id] = true);
@@ -1050,6 +1072,7 @@ async function tryResolve(force){
 
       } else if (g.phase === "kamikaze") {
         const s = kamiStatus(g, A);
+        hist({ k: "kami", day: g.day, by: g.kami, target: (s.target && !deadIn(g, s.target)) ? s.target : null });
         if (s.target && !deadIn(g, s.target)) { g.dead[s.target] = true; log(`💥 Ο Καμικάζι πήρε μαζί του τον/την ${nm(s.target)}.`); }
         else log("💥 Ο Καμικάζι δεν πήρε κανέναν μαζί του.");
         g.kami = null;
@@ -1095,6 +1118,8 @@ async function kamikazeNow(target){
     const log = t => g.log.push({ t, ts: Date.now() });
     g.dead[pid] = true; g.dead[target] = true;
     log(`💥 Ο/Η ${nameOf(pid)} ήταν ο Καμικάζι! Αυτοκτόνησε και πήρε μαζί του τον/την ${nameOf(target)}.`);
+    g.history = Object.values(g.history || {});
+    g.history.push({ k: "suicide", day: g.day, phase: g.phase, by: pid, target, ts: Date.now() });
     checkWin(g, log);
     return g;
   });
@@ -1352,10 +1377,64 @@ function renderFlow(){
     li.append(num, name); ul.appendChild(li);
   });
 
-  // Ιστορικό (νεότερα πάνω)
+  // 📜 Ιστορικό (νεότερα πάνω)
+  renderHistory(g);
   const log = $("logList"); log.textContent = "";
   Object.values(g.log || {}).slice().reverse().forEach(e => {
     const li = document.createElement("li"); li.textContent = e.t; log.appendChild(li);
+  });
+}
+
+function renderHistory(g){
+  const box = $("histList"); box.textContent = "";
+  const H = Object.values(g.history || {});
+  if (!H.length) {
+    const p = document.createElement("p"); p.className = "note"; p.textContent = "Δεν έχει γίνει τίποτα ακόμα.";
+    box.appendChild(p); return;
+  }
+  const P = (parent, text, cls) => { const p = document.createElement("p"); if (cls) p.className = cls; p.textContent = text; parent.appendChild(p); return p; };
+  H.slice().reverse().forEach(e => {
+    const b = document.createElement("div");
+    if (e.k === "night") {
+      b.className = "hblock night";
+      const h = document.createElement("h3"); h.textContent = `🌙 Νύχτα ${e.day}`; b.appendChild(h);
+      const died = Object.values(e.died || {});
+      if (died.length) {
+        const p = P(b, "", "hres"); p.append(died.length > 1 ? "Πέθαναν: " : "Πέθανε: ");
+        const x = document.createElement("b"); x.textContent = died.map(nameOf).join(", "); p.appendChild(x);
+      } else P(b, "Κανείς δεν πέθανε.", "hres");
+    } else if (e.k === "day") {
+      b.className = "hblock day";
+      const h = document.createElement("h3"); h.textContent = `☀️ Μέρα ${e.day}: ψηφοφορία`; b.appendChild(h);
+      const votes = e.votes || {}, dbl = Object.values(e.dbl || {});
+      const ids = Object.keys(votes).sort((a, c) => ((players[a] || {}).ts || 0) - ((players[c] || {}).ts || 0));
+      if (ids.length) {
+        const grid = document.createElement("div"); grid.className = "hvotes";
+        ids.forEach(v => {
+          const a = document.createElement("span"); a.textContent = nameOf(v) + (dbl.includes(v) ? " ⭐×2" : "");
+          const ar = document.createElement("span"); ar.className = "ar"; ar.textContent = "→";
+          const t = document.createElement("span"); t.textContent = nameOf(votes[v]);
+          grid.append(a, ar, t);
+        });
+        b.appendChild(grid);
+        const tally = {};
+        ids.forEach(v => tally[votes[v]] = (tally[votes[v]] || 0) + (dbl.includes(v) ? 2 : 1));
+        P(b, "Σύνολο: " + Object.entries(tally).sort((x, y) => y[1] - x[1]).map(([id, n]) => `${nameOf(id)} ${n}`).join(" · "), "note");
+      }
+      if (e.out) {
+        const p = P(b, "", "hres"); p.append("Βγήκε: ");
+        const x = document.createElement("b"); x.textContent = nameOf(e.out); p.appendChild(x);
+        if (e.note === "crazy") p.append(" (ήταν η Τρέλα)");
+        if (e.note === "kamikaze") p.append(" (ήταν ο Καμικάζι)");
+      } else P(b, "Ισοπαλία: δεν βγήκε κανείς.", "hres");
+    } else if (e.k === "kami" || e.k === "suicide") {
+      b.className = "hblock";
+      const h = document.createElement("h3");
+      h.textContent = e.k === "kami" ? `💥 Καμικάζι (Μέρα ${e.day})` : `💥 Αυτοκτονία Καμικάζι (${e.phase === "night" ? "Νύχτα" : "Μέρα"} ${e.day})`;
+      b.appendChild(h);
+      P(b, e.target ? `Ο/Η ${nameOf(e.by)} πήρε μαζί του τον/την ${nameOf(e.target)}.` : `Ο/Η ${nameOf(e.by)} δεν πήρε κανέναν μαζί του.`, "hres");
+    } else return;
+    box.appendChild(b);
   });
 }
 
