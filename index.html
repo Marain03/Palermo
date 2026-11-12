@@ -405,7 +405,7 @@
     <button class="ghost small" id="leaveBtn">Αποχώρηση</button>
   </div>
 
-  <div class="card" id="lobbyRoles">
+  <div class="card hidden" id="lobbyRoles">
     <div class="meta"><span>Ρόλοι σε αυτό το παιχνίδι</span></div>
     <p class="note" id="lobbyRolesText" style="margin:0"></p>
   </div>
@@ -970,7 +970,7 @@ function showLobby(){
   const cnt = {}; deck.forEach(x => cnt[x] = (cnt[x] || 0) + 1);
   $("lobbyRolesText").textContent = ROLE_ORDER.filter(x => cnt[x]).map(x => ROLE_BY_ID[x].name + (cnt[x] > 1 ? " ×" + cnt[x] : "")).join(" · ")
     + (list.length < MIN_PLAYERS ? ` (για ${MIN_PLAYERS} παίκτες)` : "");
-  $("lobbyRoles").classList.toggle("hidden", !!(game && game.status === "playing"));
+  $("lobbyRoles").classList.add("hidden");
 
   renderHost($("hostLobby"));
 }
