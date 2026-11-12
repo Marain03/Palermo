@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="theme-color" content="#16122A">
+<meta name="theme-color" content="#0C0A0E">
 <meta name="description" content="Το Παλέρμο της παρέας από το κινητό.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
@@ -20,13 +20,14 @@
      Palermo · Νύχτα (μελανί, φως φαναριού) / Μέρα (ηλιόλουστη πέτρα, θάλασσα)
      ============================================================ */
   :root{
-    --bg:#16122A; --bg2:#1A1530; --panel:#221B3E; --raise:#2C234F; --line:#3A2F61;
-    --text:#EFE8DA; --muted:#A39BBE; --field:#110D21;
-    --head:#EBB64B;            /* τίτλοι */
-    --accent:#EBB64B; --accent-ink:#241803; --accent-hover:#F3C766;
-    --wine:#EBB64B; --wine-soft:#2A2E4A; --ok:#6FB07A;
+    --bg:#0C0A0E; --bg2:#110E13; --panel:#1C1720; --raise:#262029; --line:#2E2733;
+    --text:#F3EDE6; --muted:#A79CA8; --field:#0F0C11;
+    --head:#F3EDE6;            /* τίτλοι */
+    --gold:#D9A74A;
+    --accent:#C4253A; --accent-ink:#FFFFFF; --accent-hover:#D63347;
+    --wine:#D6334A; --wine-soft:#2A1219; --ok:#6FB07A;
     /* Η κάρτα του ρόλου: μπλε της θάλασσας με χρυσό */
-    --card-a:#221B3E; --card-b:#221B3E; --card-ink:#EFE8DA; --card-line:#3A2F61; --card-hi:#EBB64B; --card-muted:#A39BBE;
+    --card-a:#1C1720; --card-b:#1C1720; --card-ink:#F3EDE6; --card-line:#2E2733; --card-hi:#D9A74A; --card-muted:#A79CA8;
     --serif:"GFS Didot", "Noto Serif", Georgia, serif;
     --sans:Commissioner, system-ui, -apple-system, "Segoe UI", sans-serif;
     --r:14px;
@@ -45,17 +46,9 @@
   body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;transition:opacity 1.4s ease}
   body::before{
     background:
-      radial-gradient(1.2px 1.2px at 12% 18%, #ffffffaa, transparent 60%),
-      radial-gradient(1px 1px at 28% 8%, #ffffff88, transparent 60%),
-      radial-gradient(1.4px 1.4px at 46% 22%, #ffffffaa, transparent 60%),
-      radial-gradient(1px 1px at 63% 12%, #ffffff77, transparent 60%),
-      radial-gradient(1.2px 1.2px at 80% 26%, #ffffff99, transparent 60%),
-      radial-gradient(1px 1px at 90% 6%, #ffffff77, transparent 60%),
-      radial-gradient(1px 1px at 8% 40%, #ffffff55, transparent 60%),
-      radial-gradient(1px 1px at 72% 44%, #ffffff55, transparent 60%),
-      radial-gradient(600px 380px at 85% -6%, rgba(235,182,75,.13), transparent 70%),
-      radial-gradient(520px 380px at -5% 105%, rgba(150,60,110,.15), transparent 70%),
-      linear-gradient(180deg, #1D1634 0%, var(--bg) 55%);
+      radial-gradient(900px 420px at 50% -12%, rgba(130,22,38,.7), transparent 70%),
+      radial-gradient(500px 360px at 105% 105%, rgba(90,40,30,.18), transparent 70%),
+      linear-gradient(180deg, #220F16 0%, var(--bg) 45%);
     opacity:1}
   body::after{
     background:
@@ -69,7 +62,7 @@
   .wrap{max-width:540px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 18px 48px}
   header{text-align:center;margin-bottom:22px}
   .moon{width:38px;height:38px;margin:0 auto 10px;border-radius:50%;
-    box-shadow:inset -10px -3px 0 0 var(--head);transform:rotate(-20deg)}
+    box-shadow:inset -10px -3px 0 0 var(--gold);transform:rotate(-20deg)}
   h1{font-family:var(--serif);font-weight:400;letter-spacing:.18em;font-size:34px;margin:0;color:var(--text)}
   .sub{color:var(--muted);font-size:14px;margin-top:6px;font-style:italic;font-family:var(--serif)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
@@ -153,7 +146,7 @@
   /* ---------- Οθόνη παιχνιδιού ---------- */
   #game{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto}
   .gtop{display:flex;align-items:baseline;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 10px;
-    border-bottom:1px solid rgba(235,182,75,.22);margin-bottom:6px}
+    border-bottom:1px solid rgba(196,37,58,.3);margin-bottom:6px}
   .gtop .t{font-family:var(--serif);letter-spacing:.16em;font-size:20px}
   .gtop .who{color:var(--muted);font-size:14px}
   .pane{flex:1;min-height:0;display:flex;flex-direction:column;padding:2px 14px 14px}
@@ -184,7 +177,7 @@
   .rolecard.closed{padding-bottom:30px}
   .rolecard::before,.rolecard::after{width:60px;height:60px}
   .rolecard.closed .rolelabel{color:var(--muted)}
-  .rolecard.closed .rolename{color:#F2C766;font-size:28px}
+  .rolecard.closed .rolename{color:var(--text);font-size:28px}
   /* τα περιεχόμενα των καρτελών να μη «ζουλιούνται» */
   .pane[data-pane="flow"] > *, .pane[data-pane="role"] > *, .pane[data-pane="hist"] > *{flex-shrink:0}
   .rolecard.closed .tapnote{color:var(--muted)}
@@ -213,7 +206,7 @@
   /* ---------- Συνομιλίες ---------- */
   .chatbox{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border:1px solid var(--line);
     border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
-  .chatbox.killers .bubble:not(.mine){box-shadow:inset 3px 0 0 rgba(235,182,75,.55)}
+  .chatbox.killers .bubble:not(.mine){box-shadow:inset 3px 0 0 rgba(214,51,74,.6)}
   .chatbox.killers{border-color:color-mix(in srgb, var(--wine) 55%, var(--line));background:color-mix(in srgb, var(--wine-soft) 55%, var(--panel))}
   .spynote{margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
   .bubble{max-width:82%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:var(--raise);align-self:flex-start;word-wrap:break-word}
@@ -286,15 +279,15 @@
   .modal.paper .mk,.modal.paper .ms,.modal.paper .note{color:var(--card-muted)}
   .modal.paper .mintel{border-color:var(--card-line)}
   .modal.paper .mintel b{color:var(--card-hi)}
-  .modal.paper button:not(.ghost){background:var(--card-hi);color:#13283C}
-  .modal.paper button:not(.ghost):hover{background:#F6D27F}
+  .modal.paper button:not(.ghost){background:var(--accent);color:#fff}
+  .modal.paper button:not(.ghost):hover{background:var(--accent-hover)}
   .modal.paper button.ghost{color:var(--card-ink);border-color:var(--card-line)}
 
   /* ---------- Ιστορικό ---------- */
   .log li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
   .log li:last-child{border-bottom:0}
   .hblock{border-left:3px solid var(--line);padding:6px 0 6px 12px;margin-bottom:14px}
-  .hblock.night{border-left-color:rgba(120,150,220,.7)}
+  .hblock.night{border-left-color:rgba(196,37,58,.7)}
   .hblock.day{border-left-color:#E0A526}
   .hblock h3{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:18px;color:var(--head)}
   .hblock p{margin:0 0 4px;font-size:14px;line-height:1.45}
