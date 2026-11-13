@@ -1472,7 +1472,7 @@ function avatarEl(id, cls){
   else a.textContent = ((p.name || nameOf(id) || "?")[0] || "?").toUpperCase();
   return a;
 }
-function shrinkPhoto(file){
+function shrinkPhoto(file, mirror){
   return new Promise((res, rej) => {
     const fr = new FileReader();
     fr.onerror = rej;
@@ -1482,12 +1482,26 @@ function shrinkPhoto(file){
       img.onload = () => {
         const S = 160, c = document.createElement("canvas"); c.width = c.height = S;
         const k = Math.min(img.width, img.height), sx = (img.width - k) / 2, sy = (img.height - k) / 2;
-        c.getContext("2d").drawImage(img, sx, sy, k, k, 0, 0, S, S);
+        const ctx = c.getContext("2d");
+        if (mirror) { ctx.translate(S, 0); ctx.scale(-1, 1); }       // selfie: όπως τη βλέπεις στην κάμερα
+        ctx.drawImage(img, sx, sy, k, k, 0, 0, S, S);
         res(c.toDataURL("image/jpeg", 0.8));
       };
       img.src = fr.result;
     };
     fr.readAsDataURL(file);
+  });
+}
+// Καθρέφτισμα μιας φωτογραφίας που έχει ήδη μπει
+function flipPhoto(url){
+  return new Promise((res, rej) => {
+    const img = new Image(); img.onerror = rej;
+    img.onload = () => {
+      const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const ctx = c.getContext("2d"); ctx.translate(c.width, 0); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0);
+      res(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = url;
   });
 }
 const showPreview = (el, url) => { el.textContent = ""; if (url) { const i = document.createElement("img"); i.src = url; i.alt = ""; el.appendChild(i); } else el.textContent = "📷"; };
@@ -1502,7 +1516,7 @@ async function onPhotoPicked(input){
   const f = input.files[0]; input.value = "";
   if (!f) return;
   try {
-    const url = await shrinkPhoto(f);
+    const url = await shrinkPhoto(f, input.id === "photoCam");
     if (players[pid]) { await update(R("players/" + pid), { photo: url }); }
     else { pendingPhoto = url; showPreview($("avPreview"), url); $("avPickText").textContent = "Άλλαξε φωτογραφία"; }
   } catch (e) { $("joinMsg").textContent = "Δεν μπόρεσα να διαβάσω τη φωτογραφία. Δοκίμασε άλλη."; }
@@ -1577,7 +1591,19 @@ function renderSheet(){
     const g = group(body); const st = mk("div", "stack");
     const c = mk("button", "big", "📷 Τράβηξε φωτογραφία"); c.type = "button"; c.dataset.photo = "cam";
     const l = mk("button", "ghost big", "🖼️ Διάλεξε από τη συλλογή"); l.type = "button"; l.dataset.photo = "lib";
-    st.append(c, l); g.appendChild(st);
+    st.append(c, l);
+    const curPhoto = players[pid] ? players[pid].photo : pendingPhoto;
+    if (curPhoto) {
+      const fl = mk("button", "ghost big", "↔️ Γύρνα ανάποδα την τωρινή φωτογραφία"); fl.type = "button";
+      fl.onclick = async () => {
+        const url = await flipPhoto(curPhoto);
+        if (players[pid]) await update(R("players/" + pid), { photo: url });
+        else { pendingPhoto = url; showPreview($("avPreview"), url); }
+        closeSheet();
+      };
+      st.appendChild(fl);
+    }
+    g.appendChild(st);
     return;
   }
 
