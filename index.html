@@ -2293,7 +2293,12 @@ function renderModals(g, A){
     body.appendChild(el("div", "mi", "☠️"));
     body.appendChild(el("div", "mt", "Πέθανες"));
     body.appendChild(el("p", "mp c", icon + " " + text));
-    btns.appendChild(mbtn("Εντάξει", () => { markDeathSeen(); closeModal(); setTab("flow"); renderFlow(); }));
+    body.appendChild(el("p", "ms", "👻 Από εδώ και πέρα βλέπεις τους ρόλους όλων. Μην πεις τίποτα στους ζωντανούς!"));
+    btns.appendChild(mbtn("👻 Δες τους ρόλους όλων", () => {
+      markDeathSeen(); closeModal(); setTab("flow"); renderFlow();
+      setTimeout(() => { const gc = $("ghostCard"); if (gc && !gc.classList.contains("hidden")) gc.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60);
+    }));
+    btns.appendChild(mbtn("Εντάξει", () => { markDeathSeen(); closeModal(); setTab("flow"); renderFlow(); }, true));
   } else if (modal.type === "phase") {
     modal.data.nodes.forEach(n => body.appendChild(n));
     btns.appendChild(mbtn(modal.data.btn, () => { closeModal(); setTab("flow"); renderFlow(); }));
