@@ -483,7 +483,7 @@
 
   <div class="card hidden" id="inProgressCard">
     <h2>Το παιχνίδι έχει ξεκινήσει</h2>
-    <p class="note">Ο γύρος τρέχει ήδη. Περίμενε τον επόμενο γύρο ή ζήτα από τον host να ξεκινήσει νέο παιχνίδι.</p>
+    <p class="note">Ο γύρος τρέχει ήδη. Αν παίζεις ήδη από άλλη συσκευή ή βγήκες, γράψε από πάνω το <b>ίδιο username</b> για να μπεις στη θέση σου.</p>
   </div>
 
   <div class="card">
@@ -1126,7 +1126,7 @@ function showLobby(){
   const joined = !!players[pid];
   const playing = game && game.status === "playing";
 
-  $("joinCard").classList.toggle("hidden", joined || playing);
+  $("joinCard").classList.toggle("hidden", joined);
   $("waitCard").classList.toggle("hidden", !joined);
   $("inProgressCard").classList.toggle("hidden", !(playing && !joined));
   if (joined) { $("myName").textContent = players[pid].name; const m = $("avMine"); m.textContent = ""; const a = avatarEl(pid, "lg"); m.replaceWith(a); a.id = "avMine"; }
@@ -1301,7 +1301,8 @@ $("guideBtn").onclick = () => { guideOpen = !guideOpen; applyRoleOpen(); };
   const area = $("game");
   area.addEventListener("touchstart", e => {
     const t = e.touches[0]; if (!t || e.touches.length > 1) { ok = false; return; }
-    ok = !e.target.closest("input, textarea, #roleCard, .modalwrap, .sheetwrap, #tabs");
+    ok = !e.target.closest("input, textarea, #roleCard, .modalwrap, .sheetwrap, #tabs")
+      && t.clientX > 28 && t.clientX < window.innerWidth - 28;      // οι άκρες είναι για το «πίσω» του iPhone
     sx = t.clientX; sy = t.clientY; st = Date.now();
   }, { passive: true });
   area.addEventListener("touchend", e => {
@@ -1788,6 +1789,16 @@ $("joinForm").addEventListener("submit", async e => {
   const msg = $("joinMsg");
   const name = $("nameInput").value.trim().replace(/\s+/g, " ");
   if (!name) { msg.textContent = "Γράψε πρώτα ένα username."; return; }
+  // Ίδιο όνομα με παίκτη που είναι εκτός σύνδεσης → «Είσαι εσύ;» (π.χ. άλλαξες από Safari σε εικονίδιο, ή άλλο κινητό)
+  const same = Object.entries(players).find(([id, p]) => id !== pid && (p.name || "").toLowerCase() === name.toLowerCase());
+  if (same && !TEST && !online[same[0]] && !same[0].startsWith("bot-")) {
+    msg.textContent = "";
+    msg.append(`Ο/Η «${same[1].name}» είναι ήδη στο τραπέζι, εκτός σύνδεσης. Είσαι εσύ; `);
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "small"; yes.style.marginLeft = "6px"; yes.textContent = "Ναι, μπαίνω στη θέση μου";
+    yes.onclick = () => { try { localStorage.setItem("palermo.pid", same[0]); localStorage.setItem("palermo.room", ROOM); } catch (e) {} location.reload(); };
+    msg.appendChild(yes);
+    return;
+  }
   if (game && game.status === "playing") { msg.textContent = "Το παιχνίδι έχει ήδη ξεκινήσει."; return; }
   $("joinBtn").disabled = true;
   let reason = "";
