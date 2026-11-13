@@ -685,7 +685,7 @@ const firebaseConfig = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getDatabase, ref, onValue, set, push, remove, update, query,
-  limitToLast, onChildAdded, runTransaction, serverTimestamp, onDisconnect, get
+  limitToLast, onChildAdded, runTransaction, serverTimestamp, onDisconnect, get, goOffline, goOnline
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const $ = id => document.getElementById(id);
@@ -1059,7 +1059,14 @@ async function keepAwake(){
   } } catch (e) {}
 }
 document.addEventListener("click", keepAwake, { once: false, passive: true });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
+// Όταν γυρνάς στην εφαρμογή (π.χ. ξεκλείδωμα iPhone), ξανασυνδέεται αμέσως αντί να περιμένει
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+  keepAwake();
+  if (hiddenAt && Date.now() - hiddenAt > 4000) { try { goOffline(db); goOnline(db); } catch (e) {} }
+  hiddenAt = 0;
+});
 
 // ---- 🔔 «Σειρά σου!» ----
 let wasMyTurn = false, titleTimer = null;
