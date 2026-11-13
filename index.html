@@ -106,7 +106,12 @@
   .timergrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
   .timergrid .rtog{padding:10px 2px;font-size:13px}
   .timergrid .rtog:first-child{grid-column:span 2}
-  .timergrid{grid-template-columns:repeat(7,1fr)}
+  .timergrid{grid-template-columns:repeat(5,1fr)}
+  .timergrid .rtog:first-child{grid-column:auto}
+  .customtime{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .customtime input{width:90px;flex:none;padding:9px 10px}
+  .customtime span{color:var(--muted);font-size:14px;flex:1}
+  .customtime.on input{border-color:var(--accent)}
   .clock{display:inline-block;margin-top:6px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--text)}
   .clock.low{color:var(--wine)}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -907,8 +912,9 @@ onValue(R("game"), snap => { game = snap.val(); gotGame = true; render(); },
 
 onValue(R("config"), snap => { cfg = snap.val(); if (gotPlayers && gotGame) render(); }, () => {});
 
-let voteSecs = 0;     // ⏱️ χρόνος ψηφοφορίας που όρισε ο host (0 = χωρίς όριο)
-onValue(R("timer"), snap => { voteSecs = +snap.val() || 0; if (gotPlayers && gotGame) render(); }, () => {});
+const DEFAULT_TALK = 120;
+let voteSecs = DEFAULT_TALK;     // 💬 χρόνος συζήτησης που όρισε ο host (πάντα υπάρχει)
+onValue(R("timer"), snap => { voteSecs = +snap.val() || DEFAULT_TALK; if (gotPlayers && gotGame) render(); }, () => {});
 onValue(R("hostPid"), snap => { hostPick = snap.val(); if (gotPlayers && gotGame) render(); }, () => {});
 
 // ---- 🟢 Ποιος είναι συνδεδεμένος ----
@@ -1117,10 +1123,10 @@ function showGame(roleId){
     });
     intel.appendChild(p);
   });
-  const mate = (game.couple || {})[pid];
-  if (mate) {
+  const mates = matesOf(game, pid);
+  if (mates.length) {
     const p = document.createElement("p"); p.append("💕 Είσαι ερωτευμένος/η με: ");
-    const b = document.createElement("b"); b.textContent = nameOf(mate); p.appendChild(b);
+    const b = document.createElement("b"); b.textContent = mates.map(nameOf).join(" και "); p.appendChild(b);
     intel.appendChild(p);
   }
   const orig = game.roles[pid];
@@ -1350,7 +1356,7 @@ function renderGhost(on){
     const n = document.createElement("span"); n.className = "pn"; n.textContent = nameOf(id); row.appendChild(n);
     const r0 = game.roles[id], r1 = eff(game, id);
     const rl = document.createElement("span"); rl.className = "ghostrole" + (ROLE_BY_ID[r1].team === "Δολοφόνοι" ? " bad" : "");
-    rl.textContent = ROLE_BY_ID[r1].name + (r0 !== r1 ? " (πρώην Βιαστής)" : "") + ((game.couple || {})[id] ? " 💕" : "");
+    rl.textContent = ROLE_BY_ID[r1].name + (r0 !== r1 ? " (πρώην Βιαστής)" : "") + (matesOf(game, id).length ? " 💕" : "");
     row.appendChild(rl);
     list.appendChild(row);
   });
@@ -1650,13 +1656,32 @@ function renderHost(container){
     const ta = document.createElement("span"); ta.textContent = "💬 Χρόνος συζήτησης πριν την ψηφοφορία"; th.appendChild(ta);
     rp.appendChild(th);
     const tg = document.createElement("div"); tg.className = "timergrid";
-    [[0, "Χωρίς όριο"], [60, "1′"], [120, "2′"], [180, "3′"], [300, "5′"], [600, "10′"]].forEach(([v, lbl]) => {
+    const PRE = [60, 120, 180, 300, 600];
+    PRE.forEach(v => {
       const b = document.createElement("button"); b.type = "button"; b.className = "rtog" + (voteSecs === v ? " on" : "");
-      b.textContent = lbl;
-      b.onclick = () => set(R("timer"), v || null);
+      b.textContent = (v / 60) + "′";
+      b.onclick = () => set(R("timer"), v);
       tg.appendChild(b);
     });
     rp.appendChild(tg);
+    // Δικός σου χρόνος
+    const cr = document.createElement("form"); cr.className = "customtime" + (PRE.includes(voteSecs) ? "" : " on");
+    const ci = document.createElement("input"); ci.type = "number"; ci.min = "0.5"; ci.max = "60"; ci.step = "0.5"; ci.inputMode = "decimal";
+    ci.placeholder = "π.χ. 4"; ci.setAttribute("aria-label", "Δικός σου χρόνος σε λεπτά");
+    if (!PRE.includes(voteSecs)) ci.value = String(Math.round(voteSecs / 30) / 2);
+    const cl = document.createElement("span"); cl.textContent = "λεπτά";
+    const cb = document.createElement("button"); cb.type = "submit"; cb.className = "ghost small"; cb.textContent = "Ορισμός";
+    cr.append(ci, cl, cb);
+    cr.onsubmit = e => {
+      e.preventDefault();
+      const m = parseFloat(String(ci.value).replace(",", "."));
+      if (!(m > 0)) return;
+      set(R("timer"), Math.round(Math.min(60, Math.max(0.5, m)) * 60));
+    };
+    rp.appendChild(cr);
+    const cur = document.createElement("p"); cur.className = "note"; cur.style.margin = "6px 0 0";
+    cur.textContent = "Κάθε μέρα: " + (voteSecs % 60 ? Math.floor(voteSecs / 60) + "′ " + (voteSecs % 60) + "″" : (voteSecs / 60) + " λεπτά") + " συζήτηση, μετά ψηφοφορία.";
+    rp.appendChild(cur);
   }
   el("hostMsg").textContent = playing
     ? `Γύρος ${game.round} σε εξέλιξη. Κανείς δεν βλέπει τους ρόλους των άλλων.`
@@ -1794,13 +1819,14 @@ function loveDeaths(g, log){
   while (changed) {
     changed = false;
     Object.keys(g.couple || {}).forEach(id => {
-      const mate = g.couple[id];
-      if (deadIn(g, id) && mate && !deadIn(g, mate)) {
+      if (!deadIn(g, id)) return;
+      matesOf(g, id).forEach(mate => {
+        if (deadIn(g, mate)) return;
         g.dead[mate] = true; out.push(mate); changed = true;
         g.history = Object.values(g.history || {});
         g.history.push({ k: "love", day: g.day, id: mate, of: id, ts: Date.now() });
         if (log) log(`💔 Ο/Η ${nameOf(mate)} πέθανε από θλίψη για τον/την ${nameOf(id)}. Ήταν ερωτευμένοι.`);
-      }
+      });
     });
   }
   return out;
@@ -1815,6 +1841,8 @@ function tickClock(){
 }
 const talking = g => !!(g && g.phase === "day" && !g.runoff && g.dayEnds && Date.now() < g.dayEnds);
 setInterval(tickClock, 1000);
+// Ερωτευμένοι: ο καθένας έχει λίστα με τους «δικούς» του (2 ή και 3, αν μπει ο Βιαστής)
+const matesOf = (g, id) => { const m = (g.couple || {})[id]; return !m ? [] : typeof m === "string" ? [m] : Object.values(m); };
 function goNight(g, log){ g.dayEnds = null; g.phase = "night"; g.day = (g.day || 1) + 1; log(`🌙 Πέφτει η νύχτα ${g.day}.`); }
 
 async function tryResolve(force){
@@ -1936,6 +1964,12 @@ async function rapeNow(target){
     } else {
       cur.copied = Object.assign({}, cur.copied || {}, { [pid]: tRole });
       cur.rapeInfo = { target, result: tRole };
+      if (tRole === "lover" && matesOf(cur, target).length) {
+        const group = [target, ...matesOf(cur, target)];
+        cur.couple = Object.assign({}, cur.couple || {});
+        group.forEach(id => { cur.couple[id] = [...matesOf(cur, id), pid]; });
+        cur.couple[pid] = group;
+      }
     }
     return cur;
   });
@@ -2127,10 +2161,16 @@ function renderModals(g, A){
         box.appendChild(el("p", "mp c", `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}. Ομάδα: ${ROLE_BY_ID[info.result].team}.`));
         const intel = el("div", "mintel");
         (SEES[info.result] || []).forEach(rid => holders(rid).forEach(id => intel.appendChild(el("p", null, `${ROLE_BY_ID[rid].name}: ${nameOf(id)}`))));
+        const ms = matesOf(g, me); if (ms.length) intel.appendChild(el("p", null, `💕 Είσαι πλέον ερωτευμένος/η με: ${ms.map(nameOf).join(" και ")}. Αν πεθάνει ένας, πεθαίνετε όλοι.`));
         if (intel.childNodes.length) box.appendChild(intel);
         box.appendChild(el("p", "mp", ROLE_BY_ID[info.result].does));
       }
       modal = { type: "phase", data: { nodes: [box], btn: "Συνέχεια" } };
+    } else if (rapistId && matesOf(g, me).includes(rapistId)) {
+      box.appendChild(el("div", "mi", "💕"));
+      box.appendChild(el("div", "mt", "Νέα αναγνώριση"));
+      box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και έγινε κι αυτός ερωτευμένος μαζί σας. Αν πεθάνει ένας από τους τρεις σας, πεθαίνετε όλοι.`));
+      modal = { type: "phase", data: { nodes: [box], btn: "Εντάξει" } };
     } else if (rapistId && (SEES[eff(g, me)] || []).includes(eff(g, rapistId))) {
       box.appendChild(el("div", "mi", "🔄"));
       box.appendChild(el("div", "mt", "Νέα αναγνώριση"));
@@ -2221,6 +2261,8 @@ function renderFlow(){
   if (info && info.result && info.result !== "batman" && g.phase !== "ended") {
     const rapistId = Object.keys(g.roles).find(id => g.roles[id] === "rapist");
     const lines = [];
+    if (rapistId && rapistId !== me && matesOf(g, me).includes(rapistId))
+      lines.push(`Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και είναι πλέον ερωτευμένος/η μαζί σας.`);
     if (rapistId && rapistId !== me && (SEES[myRole] || []).includes(eff(g, rapistId)))
       lines.push(`Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και είναι πλέον ${ROLE_BY_ID[eff(g, rapistId)].name}.`);
     if (rapistId === me) {
@@ -2640,8 +2682,8 @@ async function deal(force){
     const roles = {};
     ids.forEach((id, i) => roles[id] = picked[i]);
     const lv = shuffle(ids.filter(id => roles[id] === "lover")), couple = {};
-    for (let i = 0; i + 1 < lv.length; i += 2) { couple[lv[i]] = lv[i + 1]; couple[lv[i + 1]] = lv[i]; }
-    return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles, couple, voteSecs: voteSecs || null,
+    for (let i = 0; i + 1 < lv.length; i += 2) { couple[lv[i]] = [lv[i + 1]]; couple[lv[i + 1]] = [lv[i]]; }
+    return { status: "playing", round: ((cur && cur.round) || 0) + 1, roles, couple, voteSecs: voteSecs || DEFAULT_TALK,
              phase: "night", day: 1, dead: {},
              log: [{ t: "🌙 Πέφτει η πρώτη νύχτα: ο καθένας μαθαίνει τον ρόλο του. Απόψε δεν σκοτώνει κανείς.", ts: Date.now() }] };
   });
