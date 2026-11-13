@@ -205,6 +205,10 @@
   .tab.on{color:var(--text);background:var(--raise)}
   .tab.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--wine)}
   .tab.on .ic{filter:none;opacity:1}
+  .tab .turnbadge{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#2F7CF6;color:#fff;
+    font-size:11px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg2);animation:badgepop 1.6s ease-in-out infinite}
+  @keyframes badgepop{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+  @media (prefers-reduced-motion: reduce){ .tab .turnbadge{animation:none} }
   .tab .dot{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--wine);box-shadow:0 0 0 2px var(--bg2)}
 
   /* ---------- Το τραπουλόχαρτο του ρόλου ---------- */
@@ -482,7 +486,7 @@
     </span>
   </div>
   <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="flow"><span class="ic">🌙</span>Παιχνίδι<span class="dot hidden" id="dotFlow"></span></button>
+    <button class="tab on" data-tab="flow"><span class="ic">🌙</span>Παιχνίδι<span class="dot hidden" id="dotFlow"></span><span class="turnbadge hidden" id="turnBadge" aria-label="Σειρά σου">1</span></button>
     <button class="tab" data-tab="role"><span class="ic">🎭</span>Ρόλος</button>
     <button class="tab" data-tab="hist"><span class="ic">📜</span>Ιστορικό<span class="dot hidden" id="dotHist"></span></button>
     <button class="tab" data-tab="dm"><span class="ic">💬</span>Συνομιλίες<span class="dot hidden" id="dotDm"></span></button>
@@ -499,13 +503,13 @@
       <div id="ghostList"></div>
     </div>
     <div class="card host hidden" id="recogBox"></div>
-    <div class="card hidden" id="lastVote"></div>
     <div class="card" id="actionCard">
       <h2 id="actTitle"></h2>
       <p class="note" id="actNote"></p>
       <div class="choices" id="actChoices"></div>
       <p class="note" id="actProgress" style="margin-top:10px"></p>
     </div>
+    <div class="card hidden" id="lastVote"></div>
     <div id="hostFlow"></div>
     <div class="card">
       <h2>Παίκτες</h2>
@@ -1252,6 +1256,7 @@ $("guideBtn").onclick = () => { guideOpen = !guideOpen; applyRoleOpen(); };
 function setTab(t){
   tab = t;
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  { const tb = document.getElementById("turnBadge"); if (tb) tb.classList.toggle("hidden", !wasMyTurn || t === "flow"); }
   document.querySelectorAll(".pane").forEach(p => p.classList.toggle("hidden", p.dataset.pane !== t));
   if (t === "hist") { $("dotHist").classList.add("hidden"); const hp = document.querySelector('.pane[data-pane="hist"]'); if (hp) requestAnimationFrame(() => { hp.scrollTop = hp.scrollHeight; }); }
   if (t === "killers") { $("dotKillers").classList.add("hidden"); scrollBottom($("chatKillers")); }
@@ -2680,6 +2685,9 @@ function renderFlow(){
   }
   if (!myTurn && wasMyTurn) stopTitleFlash();
   wasMyTurn = myTurn;
+  // 🔵 Ειδοποίηση στην καρτέλα «Παιχνίδι» όσο περιμένει κάτι από σένα
+  $("turnBadge").classList.toggle("hidden", !myTurn || tab === "flow");
+  if (myTurn) $("dotFlow").classList.add("hidden");
   if (myTurn) {
     const t = document.createElement("div"); t.className = "turnbanner"; t.textContent = "🔔 Σειρά σου!";
     box.prepend(t);
