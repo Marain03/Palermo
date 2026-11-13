@@ -290,6 +290,10 @@
   .odot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-left:8px;vertical-align:middle}
   .odot.on{background:var(--ok)}
   .choice.confirming{cursor:default;padding-top:8px;padding-bottom:8px}
+  .ptag{margin-left:auto;font-size:12px;font-weight:600;color:var(--wine);background:var(--wine-soft);padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .choice .ptag + .tick{margin-left:8px}
+  .choice.confirming .ptag{margin-left:8px}
+  .missnote{border:1px solid color-mix(in srgb, var(--wine) 60%, var(--line))}
   .inlineconfirm{display:flex;gap:8px;margin-left:auto;flex:none}
   .inlineconfirm .vyes,.inlineconfirm .vno{width:42px;height:42px;padding:0;border-radius:50%;font-size:20px;line-height:1}
   .inlineconfirm .vyes{background:var(--ok);color:#fff;border:0}
@@ -2524,6 +2528,27 @@ function renderFlow(){
         ? "Πρέπει να συμφωνήσετε στο ίδιο άτομο."
         : "";
       const mine = (A.kill || {})[me];
+      const picks = st.killers.map(id => (A.kill || {})[id]);
+      // Διαφωνία: όλοι διάλεξαν αλλά όχι το ίδιο άτομο → σβήνουμε τις επιλογές και ξαναδιαλέγουν
+      if (st.killers.length > 1 && picks.every(Boolean) && !picks.every(x => x === picks[0])) {
+        const path = `act/${g.round}/${phaseKey(g)}`;
+        runTransaction(R(path), cur => {
+          if (!cur || !cur.kill) return;
+          const k = st.killers.map(id => cur.kill[id]);
+          if (!k.every(Boolean) || k.every(x => x === k[0])) return;
+          cur.killMiss = Object.assign({}, cur.kill); cur.killMiss.n = ((cur.killMissN || 0) + 1); cur.killMissN = cur.killMiss.n;
+          cur.kill = null;
+          return cur;
+        }).catch(() => {});
+      }
+      const miss = A.killMiss;
+      if (miss && !mine) {
+        const d = document.createElement("div"); d.className = "partner missnote";
+        d.append("❌ Δεν συμφωνήσατε (");
+        st.killers.forEach((id, i) => { if (i) d.append(", "); const b = document.createElement("b"); b.textContent = nameOf(id) + " → " + (miss[id] ? nameOf(miss[id]) : "—"); d.appendChild(b); });
+        d.append("). Ξαναδιαλέξτε το ίδιο άτομο.");
+        box.appendChild(d);
+      }
       st.killers.filter(id => id !== me).forEach(o => {
         const pk = (A.kill || {})[o];
         const d = document.createElement("div"); d.className = "partner";
@@ -2531,6 +2556,12 @@ function renderFlow(){
         const b = document.createElement("b"); b.textContent = pk ? nameOf(pk) : "δεν έχει διαλέξει ακόμα"; d.appendChild(b);
         box.appendChild(d);
       });
+      // ποιο όνομα διάλεξε ο συνεργάτης (ετικέτα δίπλα στο όνομα)
+      const partnerTag = id => {
+        const who = st.killers.filter(o => o !== me && (A.kill || {})[o] === id);
+        if (!who.length) return null;
+        const t = document.createElement("span"); t.className = "ptag"; t.textContent = "🔪 " + who.map(nameOf).join(", "); return t;
+      };
       if (st.target) {
         box.textContent = "";
         const d = document.createElement("div"); d.className = "partner";
@@ -2541,7 +2572,7 @@ function renderFlow(){
       } else {
         if (nightPickKey !== phaseKey(g)) { nightPick = null; nightPickKey = phaseKey(g); }
         al.filter(id => !KILLERS.includes(eff(g, id))).forEach(id =>
-          box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, null, false,
+          box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, partnerTag(id), false,
             nightPick === id && nightPick !== mine ? { yes: () => { const t = nightPick; nightPick = null; doAction("kill", t); }, no: () => { nightPick = null; renderFlow(); } } : null)));
       }
     } else if (myRole === "doctor" && !st.docTurn) {
