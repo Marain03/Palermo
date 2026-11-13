@@ -1,5 +1,5 @@
 // Palermo service worker: η εφαρμογή ανοίγει γρήγορα και παίρνει πάντα την τελευταία έκδοση.
-const CACHE = "palermo-v32";
+const CACHE = "palermo-v33";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "qr.js"];
 
 self.addEventListener("install", e => {

@@ -205,7 +205,7 @@
   .tab.on{color:var(--text);background:var(--raise)}
   .tab.on::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--wine)}
   .tab.on .ic{filter:none;opacity:1}
-  .tab .turnbadge{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#2F7CF6;color:#fff;
+  .tab .turnbadge{position:absolute;top:2px;right:calc(50% - 22px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;
     font-size:11px;font-weight:700;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--bg2);animation:badgepop 1.6s ease-in-out infinite}
   @keyframes badgepop{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
   @media (prefers-reduced-motion: reduce){ .tab .turnbadge{animation:none} }
@@ -2126,6 +2126,20 @@ async function kamikazeNow(target){
   kamiArm = false; kamiPick = null;
 }
 
+// --- Επιβεβαίωση ✓ / ✗ (ίδια για ψήφο και για κάθε δράση) ---
+function confirmRow(before, name, after, onYes, onNo){
+  const c = document.createElement("div"); c.className = "voteconfirm";
+  const q = document.createElement("div"); q.className = "vq";
+  q.append(before); const b = document.createElement("b"); b.textContent = name; q.appendChild(b); q.append(after);
+  const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.setAttribute("aria-label", "Ναι");
+  yes.onclick = onYes;
+  const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.setAttribute("aria-label", "Όχι");
+  no.onclick = onNo;
+  c.append(q, yes, no);
+  return c;
+}
+let nightPick = null, nightPickKey = null;     // επιλογή που περιμένει ✓
+
 // --- Οθόνη "Παιχνίδι" ---
 function choiceBtn(label, sel, onClick, right, disabled){
   const b = document.createElement("button"); b.type = "button";
@@ -2436,12 +2450,8 @@ function renderFlow(){
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
       aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = id; renderFlow(); })));
-      const ok = document.createElement("button"); ok.type = "button"; ok.className = "big"; ok.style.marginTop = "6px";
-      ok.textContent = rapePick ? "Επιβεβαίωση: " + nameOf(rapePick) : "Διάλεξε παίκτη";
-      ok.disabled = !rapePick;
-      ok.onclick = () => rapeNow(rapePick);
-      box.appendChild(ok);
+        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); })));
+      if (rapePick) box.appendChild(confirmRow("Βιάζεις τον/την ", nameOf(rapePick), ";", () => rapeNow(rapePick), () => { rapePick = null; renderFlow(); }));
     } else if (st.rapistPending) {
       aTitle.textContent = "⏳ Περίμενε λίγο";
       aNote.textContent = "";
@@ -2479,12 +2489,8 @@ function renderFlow(){
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
       aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = id; renderFlow(); })));
-      const ok = document.createElement("button"); ok.type = "button"; ok.className = "big"; ok.style.marginTop = "6px";
-      ok.textContent = rapePick ? "Επιβεβαίωση: " + nameOf(rapePick) : "Διάλεξε παίκτη";
-      ok.disabled = !rapePick;
-      ok.onclick = () => rapeNow(rapePick);
-      box.appendChild(ok);
+        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); })));
+      if (rapePick) box.appendChild(confirmRow("Βιάζεις τον/την ", nameOf(rapePick), ";", () => rapeNow(rapePick), () => { rapePick = null; renderFlow(); }));
     } else if (g.roles[me] === "rapist" && g.day === RAPE_NIGHT && g.rapeInfo && !KILLERS.includes(myRole) && myRole !== "doctor") {
       const info = g.rapeInfo;
       if (info.result === "batman") {
@@ -2518,8 +2524,11 @@ function renderFlow(){
         box.appendChild(d);
         prog.textContent = "Τώρα είναι η σειρά του Γιατρού. Μετά ξημερώνει.";
       } else {
+        if (nightPickKey !== phaseKey(g)) { nightPick = null; nightPickKey = phaseKey(g); }
         al.filter(id => !KILLERS.includes(eff(g, id))).forEach(id =>
-          box.appendChild(choiceBtn(nameOf(id), mine === id, () => doAction("kill", id))));
+          box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); })));
+        if (nightPick && nightPick !== mine) box.appendChild(confirmRow("Σκοτώνετε τον/την ", nameOf(nightPick), ";",
+          () => { const t = nightPick; nightPick = null; doAction("kill", t); }, () => { nightPick = null; renderFlow(); }));
       }
     } else if (myRole === "doctor" && !st.docTurn) {
       aTitle.textContent = "😴 Περίμενε τη σειρά σου";
@@ -2528,11 +2537,14 @@ function renderFlow(){
       aTitle.textContent = "💉 Ποιον θα προστατέψεις απόψε;";
       aNote.textContent = "";
       const mine = (A.save || {})[me];
+      if (nightPickKey !== phaseKey(g)) { nightPick = null; nightPickKey = phaseKey(g); }
       al.forEach(id => {
         const why = docBlocked(g, id, me);
         box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : "") + (why ? " · " + why : ""),
-          mine === id && !why, () => doAction("save", id), null, !!why));
+          (nightPick || mine) === id && !why, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, null, !!why));
       });
+      if (nightPick && nightPick !== mine) box.appendChild(confirmRow(nightPick === me ? "Σώζεις " : "Σώζεις τον/την ", nightPick === me ? "τον εαυτό σου" : nameOf(nightPick), ";",
+        () => { const t = nightPick; nightPick = null; doAction("save", t); }, () => { nightPick = null; renderFlow(); }));
     } else {
       aTitle.textContent = "😴 Κοιμάσαι";
       aNote.textContent = "";
@@ -2606,13 +2618,9 @@ function renderFlow(){
           const ch = document.createElement("div"); ch.className = "choices"; ch.style.marginTop = "8px";
           al.filter(id => id !== me).forEach(id => ch.appendChild(choiceBtn(nameOf(id), judgePick === id, () => { judgePick = id; renderFlow(); })));
           m.appendChild(ch);
-          const row = document.createElement("div"); row.className = "confirm"; row.style.marginTop = "8px";
-          const y = document.createElement("button"); y.type = "button"; y.disabled = !judgePick;
-          y.textContent = judgePick ? "⚖️ Να βγει: " + nameOf(judgePick) : "Διάλεξε παίκτη";
-          y.onclick = () => { const t = judgePick; judgeArm = false; judgePick = null; set(R(`act/${g.round}/${phaseKey(g)}/judge/${me}`), t); };
-          const n = document.createElement("button"); n.type = "button"; n.className = "ghost"; n.textContent = "Άκυρο";
-          n.onclick = () => { judgeArm = false; judgePick = null; renderFlow(); };
-          row.append(y, n); m.appendChild(row);
+          if (judgePick) m.appendChild(confirmRow("Να βγει ο/η ", nameOf(judgePick), ";",
+            () => { const t = judgePick; judgeArm = false; judgePick = null; set(R(`act/${g.round}/${phaseKey(g)}/judge/${me}`), t); },
+            () => { judgeArm = false; judgePick = null; renderFlow(); }));
         } else {
           const b = document.createElement("button"); b.type = "button"; b.className = "ghost big"; b.style.marginTop = "10px";
           b.textContent = "⚖️ Άλλαξε την απόφαση σήμερα";
