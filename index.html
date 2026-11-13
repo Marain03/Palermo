@@ -1252,6 +1252,28 @@ rc.addEventListener("blur", holdOff);
 document.addEventListener("visibilitychange", () => { if (document.hidden) holdOff(); });
 $("guideBtn").onclick = () => { guideOpen = !guideOpen; applyRoleOpen(); };
 
+// 👉 Σύρε δεξιά / αριστερά για να αλλάξεις καρτέλα
+(() => {
+  let sx = 0, sy = 0, st = 0, ok = false;
+  const area = $("game");
+  area.addEventListener("touchstart", e => {
+    const t = e.touches[0]; if (!t || e.touches.length > 1) { ok = false; return; }
+    ok = !e.target.closest("input, textarea, #roleCard, .modalwrap, .sheetwrap, #tabs");
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  area.addEventListener("touchend", e => {
+    if (!ok) return; ok = false;
+    const t = e.changedTouches[0]; if (!t) return;
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - st > 700) return;
+    if (modalOpen() || sheetKind) return;
+    const tabs = [...document.querySelectorAll("#tabs .tab")].filter(b => !b.classList.contains("hidden"));
+    const i = tabs.findIndex(b => b.dataset.tab === tab);
+    const next = tabs[i + (dx < 0 ? 1 : -1)];
+    if (next) next.click();
+  }, { passive: true });
+})();
+
 // ---- Tabs ----
 function setTab(t){
   tab = t;
