@@ -701,7 +701,7 @@ if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes("PASTE"))
 // 6: 2 δολοφόνοι, Αστυνομικός, Γιατρός, Πουτάνα, Πολίτης · 7: +Δήμαρχος · 8: +Καμικάζι · 9: +Τρέλα · 10: +Πολίτης
 // 11: +Μπάτμαν · 12: +Βιαστής
 // Σειρά εμφάνισης ρόλων στις λίστες
-const ROLE_ORDER = ["killerOpen","killerHidden","cop","doctor","whore","batman","rapist","mayor","judge","kamikaze","crazy","lover","citizen"];
+const ROLE_ORDER = ["killerOpen","killerHidden","cop","journalist","doctor","whore","batman","rapist","mayor","judge","kamikaze","crazy","lover","citizen"];
 // Ειδικοί ρόλοι που διαλέγει ο host. Η σειρά είναι και η αυτόματη επιλογή ανά αριθμό παικτών.
 const OPTIONAL = ["cop","doctor","batman","mayor","whore","rapist","kamikaze","crazy"];
 const MIN_PLAYERS = 6, MAX_PLAYERS = 20;
@@ -717,6 +717,12 @@ const ROLE_BY_ID = {
     does:"Από τη δεύτερη νύχτα και μετά, μαζί με τους άλλους δολοφόνους, διαλέγετε ποιον θα σκοτώσετε (πρέπει να συμφωνήσετε στο ίδιο άτομο). Συνεννοηθείτε στην καρτέλα 🔪. Τη μέρα παριστάνεις τον αθώο πολίτη.",
     goal:"Να μείνετε ζωντανοί μέχρι οι δολοφόνοι να είναι όσοι και οι υπόλοιποι παίκτες.",
     tips:["Ο Αστυνομικός ΔΕΝ ξέρει ποιος είσαι. Σε ξέρει μόνο η Πουτάνα, που είναι με το μέρος σας.","Είσαι το κρυφό χαρτί της ομάδας. Αν πέσει ο Φανερός, συνεχίζετε χωρίς αυτόν.","Καμιά φορά βοηθάει να ψηφίσεις κι εσύ τον Φανερό, για να φανείς αθώος."]
+  },
+  journalist: {
+    name:"Δημοσιογράφος", team:"Πόλη",
+    does:"Τη δεύτερη νύχτα (όχι την πρώτη, που είναι μόνο για να μάθετε τους ρόλους) μαθαίνεις κρυφά ένα όνομα: έναν παίκτη που έχει κακό ρόλο. Δεν μαθαίνεις ποιος ακριβώς είναι ο ρόλος του: μπορεί να είναι δολοφόνος, η Πουτάνα, η Τρέλα ή ο Βιαστής, αν πήρε κακό ρόλο.",
+    goal:"Να βγουν όλοι οι δολοφόνοι.",
+    tips:["Το όνομα που μαθαίνεις δεν είναι σίγουρα δολοφόνος: μπορεί να είναι η Τρέλα, που θέλει να την ψηφίσετε!","Μην πεις αμέσως τι ξέρεις: αν σε καταλάβουν οι δολοφόνοι, θα σε σκοτώσουν.","Δες πώς ψηφίζει αυτός που σου έδειξαν και με ποιους συμφωνεί."]
   },
   cop: {
     name:"Αστυνομικός", team:"Πόλη",
@@ -788,7 +794,7 @@ const ROLE_BY_ID = {
 // Ρόλοι του παιχνιδιού: 2 δολοφόνοι + οι ειδικοί που διάλεξε ο host + Πολίτες για όσους περισσεύουν
 let cfg = null;
 // Ρόλοι με αριθμό (ο host μπορεί να βάλει κάποιον πάνω από μία φορά). Οι Ερωτευμένοι μετράνε σε ζευγάρια.
-const COUNTABLE = ["killerOpen", "killerHidden", "cop", "doctor", "whore", "batman", "rapist", "mayor", "judge", "kamikaze", "crazy", "lover"];
+const COUNTABLE = ["killerOpen", "killerHidden", "cop", "journalist", "doctor", "whore", "batman", "rapist", "mayor", "judge", "kamikaze", "crazy", "lover"];
 const COUNT_MIN = {};
 const COUNT_MAX = { rapist: 1, killerOpen: 4, killerHidden: 6, lover: 4, judge: 2 };
 const seats = (rid, k) => rid === "lover" ? 2 * k : k;
@@ -1203,6 +1209,12 @@ function showGame(roleId){
     });
     intel.appendChild(p);
   });
+  const jt = (game.journo || {})[pid];
+  if (jt) {
+    const p = document.createElement("p"); p.append("📰 Έμαθες ότι ο/η ");
+    const b = document.createElement("b"); b.textContent = nameOf(jt); p.appendChild(b); p.append(" έχει κακό ρόλο.");
+    intel.appendChild(p);
+  }
   const mates = matesOf(game, pid);
   if (mates.length) {
     const p = document.createElement("p"); p.append("💕 Είσαι ερωτευμένος/η με: ");
@@ -1246,6 +1258,7 @@ function showGame(roleId){
 
   if (tab === "dm" && !dmOpen) renderDMList();
   renderFlow();
+  journoTip();
   applyDeadLocks();
   tryResolve(false);
   $("hostGame").textContent = "";
@@ -1775,6 +1788,7 @@ applySettings();
 const KNOWS = {
   killerOpen: "Τους άλλους δολοφόνους. Δεν ξέρει ποια είναι η Πουτάνα.",
   killerHidden: "Τους άλλους δολοφόνους. Δεν ξέρει ποια είναι η Πουτάνα.",
+  journalist: "Τη δεύτερη νύχτα μαθαίνει ένα όνομα με κακό ρόλο (δολοφόνος, Πουτάνα, Τρέλα ή Βιαστής με κακό ρόλο), χωρίς τον ακριβή ρόλο.",
   cop: "Τον Φανερό Δολοφόνο. Διαβάζει επίσης κρυφά τη συνομιλία των δολοφόνων, χωρίς ονόματα.",
   whore: "Όλους τους δολοφόνους. Εκείνοι δεν ξέρουν ποια είναι.",
   lover: "Τον/την άλλο/η Ερωτευμένο/η. Αν ο Βιαστής αντιγράψει Ερωτευμένο, γίνονται τρεις και γνωρίζονται όλοι.",
@@ -2096,6 +2110,21 @@ setInterval(tickClock, 1000);
 setInterval(() => { if (game && game.phase === "night") tryResolve(false); }, 1000);
 // Ερωτευμένοι: ο καθένας έχει λίστα με τους «δικούς» του (2 ή και 3, αν μπει ο Βιαστής)
 const matesOf = (g, id) => { const m = (g.couple || {})[id]; return !m ? [] : typeof m === "string" ? [m] : Object.values(m); };
+// 📰 Δημοσιογράφος: τη Νύχτα 2 (αφού παίξει ο Βιαστής) μαθαίνει ένα όνομα με κακό ρόλο
+const BAD_ROLES = ["killerOpen", "killerHidden", "whore", "crazy"];
+function journoTip(){
+  const g = game; if (!g || g.status !== "playing" || !g.phase || g.phase === "ended") return;
+  if (eff(g, pid) !== "journalist" || deadIn(g, pid) || (g.journo || {})[pid]) return;
+  if (g.day < RAPE_NIGHT || (g.day === RAPE_NIGHT && g.phase === "night" && nightStatus(g, PHASE_ACTS()).rapistPending)) return;
+  const round = g.round;
+  runTransaction(R("game"), cur => {
+    if (!cur || cur.round !== round || (cur.journo || {})[pid]) return;
+    const bad = Object.keys(cur.roles).filter(id => id !== pid && !deadIn(cur, id) && BAD_ROLES.includes(eff(cur, id)));
+    if (!bad.length) return;
+    cur.journo = Object.assign({}, cur.journo || {}, { [pid]: bad[Math.floor(Math.random() * bad.length)] });
+    return cur;
+  }).catch(() => {});
+}
 function goNight(g, log){ g.dayEnds = null; g.phase = "night"; g.day = (g.day || 1) + 1; log(`🌙 Πέφτει η νύχτα ${g.day}.`); }
 
 async function tryResolve(force){
@@ -2717,6 +2746,17 @@ function renderFlow(){
         al.filter(id => !KILLERS.includes(eff(g, id))).forEach(id =>
           box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, partnerTag(id), false,
             nightPick === id && nightPick !== mine ? { yes: () => { const t = nightPick; nightPick = null; doAction("kill", t); }, no: () => { nightPick = null; renderFlow(); } } : null)));
+      }
+    } else if (myRole === "journalist" && !dead) {
+      journoTip();
+      const jt = (g.journo || {})[me];
+      aTitle.textContent = jt ? "📰 Η πληροφορία σου" : "😴 Κοιμάσαι";
+      aNote.textContent = "";
+      if (jt) {
+        const d = document.createElement("div"); d.className = "partner";
+        d.append("Ο/Η "); const b = document.createElement("b"); b.textContent = nameOf(jt); d.appendChild(b);
+        d.append(" έχει κακό ρόλο. Δεν ξέρεις ποιον ακριβώς.");
+        box.appendChild(d);
       }
     } else if (myRole === "doctor" && !st.docTurn) {
       aTitle.textContent = "😴 Περίμενε τη σειρά σου";
