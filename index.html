@@ -116,15 +116,18 @@
   .clock.low{color:var(--wine)}
   .netbanner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:30;
     background:var(--accent);color:#fff;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.4);white-space:nowrap}
-  .tourcard{width:calc(100% - 36px);max-width:400px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px 22px 20px;text-align:center;animation:sheetup .25s ease}
-  .tourcard .ti{font-size:46px;line-height:1}
-  .tourcard h2{margin:12px 0 8px}
-  .tourcard p{color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;min-height:72px}
-  .tourdots{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
-  .tourdots span{width:7px;height:7px;border-radius:50%;background:var(--line)}
-  .tourdots span.on{background:var(--accent)}
-  .tourbtns{display:flex;gap:10px}
-  .tourbtns button{flex:1}
+  .rolesgroup{margin:14px 0 6px;font-weight:700;font-size:14px;color:var(--muted)}
+  .roleinfo{border:1px solid var(--line);border-radius:12px;background:var(--field);margin-bottom:6px}
+  .roleinfo summary{cursor:pointer;padding:12px 14px;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .roleinfo summary::-webkit-details-marker{display:none}
+  .roleinfo summary::after{content:"＋";color:var(--muted);font-weight:400}
+  .roleinfo[open] summary::after{content:"－"}
+  .roleinfo[open]{border-color:color-mix(in srgb, var(--accent) 50%, var(--line))}
+  .roleinfobody{padding:0 14px 12px}
+  .roleinfobody h4{margin:10px 0 4px;font-size:13px;color:var(--head);font-weight:700}
+  .roleinfobody p,.roleinfobody li{margin:0 0 6px;font-size:14px;line-height:1.55}
+  .roleinfobody ul{margin:0;padding-left:18px;list-style:disc}
+  .ri-team{color:var(--muted);font-size:13px!important}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -586,18 +589,6 @@
 </div>
 
 <div class="netbanner hidden" id="netBanner" role="status" aria-live="polite">📡 Χάθηκε η σύνδεση · ξανασυνδέομαι…</div>
-<div class="sheetwrap hidden" id="tour" style="align-items:center;z-index:25">
-  <div class="tourcard" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
-    <div class="ti" id="tourIcon"></div>
-    <h2 id="tourTitle"></h2>
-    <p id="tourText"></p>
-    <div class="tourdots" id="tourDots"></div>
-    <div class="tourbtns">
-      <button type="button" class="ghost" id="tourSkip">Παράλειψη</button>
-      <button type="button" id="tourNext">Επόμενο</button>
-    </div>
-  </div>
-</div>
 <input type="file" accept="image/*" id="photoInput" hidden>
 <input type="file" accept="image/*" capture="user" id="photoCam" hidden>
 
@@ -1068,7 +1059,6 @@ function render(){
   else { showLobby(); }
   $("hostBtn").classList.toggle("hidden", !amHost());
   $("hostBtnLobby").classList.toggle("hidden", !amHost() || !players[pid]);
-  if (!roleId) maybeTour();
   renderSheet();
 }
 
@@ -1502,6 +1492,33 @@ function renderSheet(){
   const body = $("sheetBody"); body.textContent = "";
   $("sheet").classList.remove("hidden");
 
+  if (sheetKind === "roles") {
+    $("sheetTitle").textContent = "🎭 Όλοι οι ρόλοι";
+    const intro = mk("p", "note", "Πάτα σε έναν ρόλο για να δεις τι κάνει, πώς κερδίζει και συμβουλές."); intro.style.margin = "4px 0 10px";
+    body.appendChild(intro);
+    const TEAMS = [["Δολοφόνοι", "🔪 Οι κακοί"], ["Πόλη", "🏘️ Η Πόλη"], ["Μόνη της", "🃏 Μόνοι τους"], ["Μόνος του", null]];
+    const shown = new Set();
+    TEAMS.forEach(([team, label]) => {
+      const ids = ROLE_ORDER.filter(id => ROLE_BY_ID[id].team === team);
+      if (!ids.length) return;
+      if (label) body.appendChild(mk("div", "rolesgroup", label));
+      ids.forEach(id => {
+        shown.add(id);
+        const R1 = ROLE_BY_ID[id];
+        const d = document.createElement("details"); d.className = "roleinfo";
+        const sm = document.createElement("summary"); sm.textContent = R1.name; d.appendChild(sm);
+        const b = mk("div", "roleinfobody");
+        b.appendChild(mk("p", "ri-team", "Ομάδα: " + R1.team));
+        b.appendChild(mk("h4", null, "Τι κάνει")); b.appendChild(mk("p", null, R1.does));
+        b.appendChild(mk("h4", null, "Πώς κερδίζει")); b.appendChild(mk("p", null, R1.goal));
+        if (KNOWS[id]) { b.appendChild(mk("h4", null, "Τι ξέρει")); b.appendChild(mk("p", null, KNOWS[id])); }
+        if ((R1.tips || []).length) { b.appendChild(mk("h4", null, "Συμβουλές")); const ul = document.createElement("ul"); R1.tips.forEach(t => ul.appendChild(mk("li", null, t))); b.appendChild(ul); }
+        d.appendChild(b); body.appendChild(d);
+      });
+    });
+    return;
+  }
+
   if (sheetKind === "qr") {
     $("sheetTitle").textContent = "Σκάναρε για να μπεις";
     const g = group(body);
@@ -1543,9 +1560,9 @@ function renderSheet(){
       }
     };
     if (!$("game").classList.contains("hidden")) more.appendChild(rules);
-    const tb = mk("button", "ghost big", "👋 Σύντομος οδηγός"); tb.type = "button"; tb.style.marginTop = "8px";
-    tb.onclick = () => { closeSheet(); showTour(); };
-    more.appendChild(tb);
+    const rb = mk("button", "ghost big", "🎭 Όλοι οι ρόλοι αναλυτικά"); rb.type = "button"; rb.style.marginTop = "8px";
+    rb.onclick = () => openSheet("roles");
+    more.appendChild(rb);
     return;
   }
 
@@ -1611,28 +1628,17 @@ async function hostKick(id){
 
 applySettings();
 
-// ---- 👋 Οδηγός πρώτης φοράς ----
-const TOUR = [
-  ["🎭", "Ο ρόλος σου", "Όταν ξεκινήσει το παιχνίδι, παίρνεις κρυφά έναν ρόλο. Στην καρτέλα «Ρόλος» κράτα πατημένη την κάρτα για να τον δεις. Μην τον δείξεις σε κανέναν."],
-  ["🌙", "Τη νύχτα", "Αν ο ρόλος σου έχει δουλειά, θα δεις «Σειρά σου» και διαλέγεις έναν παίκτη. Αλλιώς απλώς περιμένεις να ξημερώσει."],
-  ["☀️", "Τη μέρα", "Πρώτα συζητάτε όσο τρέχει το χρονόμετρο. Μετά ψηφίζετε ποιος θα βγει. Η ψήφος θέλει ✓ και μετά δεν αλλάζει."]
-];
-let tourStep = 0;
-function showTour(){ tourStep = 0; drawTour(); $("tour").classList.remove("hidden"); $("tourNext").focus(); }
-function endTour(){ $("tour").classList.add("hidden"); try { localStorage.setItem("palermo.tourSeen", "1"); } catch (e) {} }
-function drawTour(){
-  const [ic, t, x] = TOUR[tourStep];
-  $("tourIcon").textContent = ic; $("tourTitle").textContent = t; $("tourText").textContent = x;
-  $("tourDots").textContent = ""; TOUR.forEach((_, i) => { const d = document.createElement("span"); if (i === tourStep) d.className = "on"; $("tourDots").appendChild(d); });
-  $("tourNext").textContent = tourStep === TOUR.length - 1 ? "Πάμε!" : "Επόμενο";
-  $("tourSkip").classList.toggle("hidden", tourStep === TOUR.length - 1);
-}
-$("tourNext").onclick = () => { if (tourStep < TOUR.length - 1) { tourStep++; drawTour(); } else endTour(); };
-$("tourSkip").onclick = endTour;
-function maybeTour(){
-  let seen = false; try { seen = localStorage.getItem("palermo.tourSeen") === "1"; } catch (e) {}
-  if (!seen && !TEST && players[pid] && $("tour").classList.contains("hidden")) showTour();
-}
+// Τι ξέρει κάθε ρόλος από την αρχή (για την αναλυτική λίστα ρόλων)
+const KNOWS = {
+  killerOpen: "Τους άλλους δολοφόνους. Δεν ξέρει ποια είναι η Πουτάνα.",
+  killerHidden: "Τους άλλους δολοφόνους. Δεν ξέρει ποια είναι η Πουτάνα.",
+  cop: "Τον Φανερό Δολοφόνο. Διαβάζει επίσης κρυφά τη συνομιλία των δολοφόνων, χωρίς ονόματα.",
+  whore: "Όλους τους δολοφόνους. Εκείνοι δεν ξέρουν ποια είναι.",
+  lover: "Τον/την άλλο/η Ερωτευμένο/η. Αν ο Βιαστής αντιγράψει Ερωτευμένο, γίνονται τρεις και γνωρίζονται όλοι.",
+  rapist: "Τίποτα στην αρχή. Μόλις αντιγράψει ρόλο, μαθαίνει ό,τι ξέρει ο νέος του ρόλος.",
+  doctor: "Τίποτα. Μαθαίνει μόνο το αποτέλεσμα της νύχτας στο ξημέρωμα.",
+  mayor: "Τίποτα.", kamikaze: "Τίποτα.", crazy: "Τίποτα.", batman: "Τίποτα.", citizen: "Τίποτα."
+};
 
 // ---- Join / leave ----
 $("joinForm").addEventListener("submit", async e => {
