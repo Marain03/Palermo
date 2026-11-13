@@ -1891,9 +1891,11 @@ function nightStatus(g, A){
     return { intro: true, done: !rapistPending && notReady.length === 0, notReady, ready, target: null, forced: null,
              saves: {}, docs: [], killers, rapist, rapistPending, killersTurn: false, docTurn: false };
   }
-  const done = !rapistPending && (killers.length === 0 || !!agreed) && allSaved;
-  return { done, target: agreed, forced: same ? picks[0] : null, saves, docs, killers, rapist, rapistPending,
-           killersTurn: !rapistPending, docTurn: !rapistPending && (killers.length === 0 || !!agreed) };
+  const noKill = !!A.killNone;                      // διαφώνησαν 3 φορές → απόψε δεν σκοτώνουν
+  const killersDone = killers.length === 0 || !!agreed || noKill;
+  const done = !rapistPending && killersDone && allSaved;
+  return { done, target: noKill ? null : agreed, forced: noKill ? null : (same ? picks[0] : null), saves, docs, killers, rapist, rapistPending, noKill,
+           killersTurn: !rapistPending && !noKill, docTurn: !rapistPending && killersDone };
 }
 function docBlocked(g, target, doc){
   if (target === (g.docLast || {})[doc]) return "όχι 2 νύχτες στη σειρά";
@@ -1972,6 +1974,7 @@ function tickClock(){
 }
 const talking = g => !!(g && g.phase === "day" && !g.runoff && g.dayEnds && Date.now() < g.dayEnds);
 setInterval(tickClock, 1000);
+setInterval(() => { if (game && game.phase === "night") tryResolve(false); }, 1000);
 // Ερωτευμένοι: ο καθένας έχει λίστα με τους «δικούς» του (2 ή και 3, αν μπει ο Βιαστής)
 const matesOf = (g, id) => { const m = (g.couple || {})[id]; return !m ? [] : typeof m === "string" ? [m] : Object.values(m); };
 function goNight(g, log){ g.dayEnds = null; g.phase = "night"; g.day = (g.day || 1) + 1; log(`🌙 Πέφτει η νύχτα ${g.day}.`); }
@@ -1981,6 +1984,12 @@ async function tryResolve(force){
   const A = PHASE_ACTS();
   const st = game.phase === "night" ? nightStatus(game, A) : game.phase === "day" ? dayStatus(game, A) : kamiStatus(game, A);
   if (!force && !st.done) return;
+  // 🌅 Τυχαία αναμονή πριν το ξημέρωμα, για να μη φαίνεται ποιος έπαιζε (ή αν ζει ο Γιατρός)
+  if (!force && game.phase === "night" && !st.intro) {
+    const path = `act/${game.round}/${phaseKey(game)}/dawnAt`;
+    if (!A.dawnAt) { runTransaction(R(path), cur => cur ? undefined : Date.now() + 4000 + Math.floor(Math.random() * 5000)).catch(() => {}); return; }
+    if (Date.now() < A.dawnAt) return;
+  }
   if (resolving) return;
   resolving = true;
   const expect = { round: game.round, phase: game.phase, day: game.day, runoff: game.runoff ? (game.runoff.n || 1) : 0 };
@@ -2521,7 +2530,7 @@ function renderFlow(){
       }
     } else if (KILLERS.includes(myRole) && st.rapistPending) {
       aTitle.textContent = "⏳ Περιμένετε";
-      aNote.textContent = "Πρώτα παίζει ο Βιαστής.";
+      aNote.textContent = "Η νύχτα μόλις ξεκίνησε.";
     } else if (KILLERS.includes(myRole)) {
       aTitle.textContent = "🔪 Διάλεξε θύμα";
       aNote.textContent = st.killers.length > 1
@@ -2538,15 +2547,21 @@ function renderFlow(){
           if (!k.every(Boolean) || k.every(x => x === k[0])) return;
           cur.killMiss = Object.assign({}, cur.kill); cur.killMiss.n = ((cur.killMissN || 0) + 1); cur.killMissN = cur.killMiss.n;
           cur.kill = null;
+          if (cur.killMissN >= 3) cur.killNone = true;
           return cur;
         }).catch(() => {});
       }
       const miss = A.killMiss;
-      if (miss && !mine) {
+      if (st.noKill) {
+        box.textContent = "";
+        const d = document.createElement("div"); d.className = "partner missnote";
+        d.textContent = "❌ Δεν συμφωνήσατε 3 φορές. Απόψε δεν σκοτώνετε κανέναν.";
+        box.appendChild(d);
+      } else if (miss && !mine) {
         const d = document.createElement("div"); d.className = "partner missnote";
         d.append("❌ Δεν συμφωνήσατε (");
         st.killers.forEach((id, i) => { if (i) d.append(", "); const b = document.createElement("b"); b.textContent = nameOf(id) + " → " + (miss[id] ? nameOf(miss[id]) : "—"); d.appendChild(b); });
-        d.append("). Ξαναδιαλέξτε το ίδιο άτομο.");
+        d.append(`). Ξαναδιαλέξτε το ίδιο άτομο (${Math.min(miss.n || 1, 3)}/3: στην 3η διαφωνία δεν σκοτώνετε κανέναν).`);
         box.appendChild(d);
       }
       st.killers.filter(id => id !== me).forEach(o => {
@@ -2562,13 +2577,15 @@ function renderFlow(){
         if (!who.length) return null;
         const t = document.createElement("span"); t.className = "ptag"; t.textContent = "🔪 " + who.map(nameOf).join(", "); return t;
       };
-      if (st.target) {
+      if (st.noKill) {
+        prog.textContent = "";
+      } else if (st.target) {
         box.textContent = "";
         const d = document.createElement("div"); d.className = "partner";
         d.append("✔ Συμφωνήσατε: ");
         const b = document.createElement("b"); b.textContent = nameOf(st.target); d.appendChild(b);
         box.appendChild(d);
-        prog.textContent = "Τώρα είναι η σειρά του Γιατρού. Μετά ξημερώνει.";
+        prog.textContent = "";
       } else {
         if (nightPickKey !== phaseKey(g)) { nightPick = null; nightPickKey = phaseKey(g); }
         al.filter(id => !KILLERS.includes(eff(g, id))).forEach(id =>
@@ -2593,7 +2610,7 @@ function renderFlow(){
       aTitle.textContent = "😴 Κοιμάσαι";
       aNote.textContent = "";
     }
-    if (!st.done) prog.textContent = prog.textContent || (st.rapistPending ? "Ο Βιαστής διαλέγει…" : !st.target && st.killers.length ? "🔪 Οι δολοφόνοι διαλέγουν θύμα…" : "💉 Σχεδόν ξημερώνει…");
+    prog.textContent = prog.textContent || (st.done ? "🌅 Σε λίγο ξημερώνει…" : "🌙 Η νύχτα συνεχίζεται…");
 
   } else if (g.phase === "day") {
     title.textContent = `☀️ Μέρα ${g.day}`;
