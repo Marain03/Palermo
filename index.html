@@ -782,7 +782,7 @@ const ROLE_BY_ID = {
     name:"Ερωτευμένος", team:"Πόλη",
     does:"Είστε ένα ζευγάρι ερωτευμένων και ξέρετε ο ένας τον άλλον από την αρχή. Είστε με την Πόλη. Αν πεθάνει ο ένας, με οποιονδήποτε τρόπο, πεθαίνει αμέσως και ο άλλος.",
     goal:"Να βγουν όλοι οι δολοφόνοι και να μείνετε ζωντανοί μαζί.",
-    tips:["Αν βγει ο/η αγαπημένος/η σου, βγαίνεις κι εσύ. Προστάτευε τον/την στην ψηφοφορία.","Μην φανεί ότι γνωρίζεστε, αλλιώς οι δολοφόνοι βγάζουν δύο με ένα χτύπημα."]
+    tips:["Αν βγει το ταίρι σου, βγαίνεις κι εσύ. Προστάτευέ το στην ψηφοφορία.","Μην φανεί ότι γνωρίζεστε, αλλιώς οι δολοφόνοι βγάζουν δύο με ένα χτύπημα."]
   },
   citizen: {
     name:"Πολίτης", team:"Πόλη",
@@ -1211,13 +1211,13 @@ function showGame(roleId){
   });
   const jt = (game.journo || {})[pid];
   if (jt) {
-    const p = document.createElement("p"); p.append("📰 Έμαθες ότι ο/η ");
-    const b = document.createElement("b"); b.textContent = nameOf(jt); p.appendChild(b); p.append(" έχει κακό ρόλο.");
+    const p = document.createElement("p"); p.append("📰 Κακό ρόλο έχει: ");
+    const b = document.createElement("b"); b.textContent = nameOf(jt); p.appendChild(b); p.append(".");
     intel.appendChild(p);
   }
   const mates = matesOf(game, pid);
   if (mates.length) {
-    const p = document.createElement("p"); p.append("💕 Είσαι ερωτευμένος/η με: ");
+    const p = document.createElement("p"); p.append("💕 Το ταίρι σου: ");
     const b = document.createElement("b"); b.textContent = mates.map(nameOf).join(" και "); p.appendChild(b);
     intel.appendChild(p);
   }
@@ -1225,7 +1225,7 @@ function showGame(roleId){
   if (orig === "rapist" && roleId !== "rapist") {
     const p = document.createElement("p");
     const info = game.rapeInfo || {};
-    p.append("Ήσουν ο Βιαστής και αντέγραψες τον ρόλο του/της ");
+    p.append("Ήσουν ο Βιαστής και αντέγραψες τον ρόλο από: ");
     const b = document.createElement("b"); b.textContent = nameOf(info.target); p.appendChild(b);
     p.append(".");
     intel.prepend(p);
@@ -1772,7 +1772,7 @@ async function hostKick(id){
     cur.dead = cur.dead || {}; cur.dead[id] = true;
     cur.log = Object.values(cur.log || {});
     const log = t => cur.log.push({ t, ts: Date.now() });
-    log(`🚪 Ο/Η ${nameOf(id)} βγήκε από το παιχνίδι.`);
+    log(`🚪 Βγήκε από το παιχνίδι: ${nameOf(id)}.`);
     cur.history = Object.values(cur.history || {});
     cur.history.push({ k: "left", day: cur.day, id, ts: Date.now() });
     loveDeaths(cur, log);
@@ -1791,7 +1791,7 @@ const KNOWS = {
   journalist: "Τη δεύτερη νύχτα μαθαίνει ένα όνομα με κακό ρόλο (δολοφόνος, Πουτάνα, Τρέλα ή Βιαστής με κακό ρόλο), χωρίς τον ακριβή ρόλο.",
   cop: "Τον Φανερό Δολοφόνο. Διαβάζει επίσης κρυφά τη συνομιλία των δολοφόνων, χωρίς ονόματα.",
   whore: "Όλους τους δολοφόνους. Εκείνοι δεν ξέρουν ποια είναι.",
-  lover: "Τον/την άλλο/η Ερωτευμένο/η. Αν ο Βιαστής αντιγράψει Ερωτευμένο, γίνονται τρεις και γνωρίζονται όλοι.",
+  lover: "Το ταίρι του. Αν ο Βιαστής αντιγράψει Ερωτευμένο, γίνονται τρεις και γνωρίζονται όλοι.",
   rapist: "Τίποτα στην αρχή. Μόλις αντιγράψει ρόλο, μαθαίνει ό,τι ξέρει ο νέος του ρόλος.",
   doctor: "Τίποτα. Μαθαίνει μόνο το αποτέλεσμα της νύχτας στο ξημέρωμα.",
   mayor: "Τίποτα.", judge: "Τίποτα.", kamikaze: "Τίποτα.", crazy: "Τίποτα.", batman: "Τίποτα.", citizen: "Τίποτα."
@@ -1807,7 +1807,7 @@ $("joinForm").addEventListener("submit", async e => {
   const same = Object.entries(players).find(([id, p]) => id !== pid && (p.name || "").toLowerCase() === name.toLowerCase());
   if (same && !TEST && !online[same[0]] && !same[0].startsWith("bot-")) {
     msg.textContent = "";
-    msg.append(`Ο/Η «${same[1].name}» είναι ήδη στο τραπέζι, εκτός σύνδεσης. Είσαι εσύ; `);
+    msg.append(`Το όνομα «${same[1].name}» είναι ήδη στο τραπέζι, εκτός σύνδεσης. Είσαι εσύ; `);
     const yes = document.createElement("button"); yes.type = "button"; yes.className = "small"; yes.style.marginLeft = "6px"; yes.textContent = "Ναι, μπαίνω στη θέση μου";
     yes.onclick = () => { try { localStorage.setItem("palermo.pid", same[0]); localStorage.setItem("palermo.room", ROOM); } catch (e) {} location.reload(); };
     msg.appendChild(yes);
@@ -2091,7 +2091,7 @@ function loveDeaths(g, log){
         g.dead[mate] = true; out.push(mate); changed = true;
         g.history = Object.values(g.history || {});
         g.history.push({ k: "love", day: g.day, id: mate, of: id, ts: Date.now() });
-        if (log) log(`💔 Ο/Η ${nameOf(mate)} πέθανε από θλίψη για τον/την ${nameOf(id)}. Ήταν ερωτευμένοι.`);
+        if (log) log(`💔 ${nameOf(id)} και ${nameOf(mate)} ήταν ερωτευμένοι: έφυγαν μαζί.`);
       });
     });
   }
@@ -2173,7 +2173,7 @@ async function tryResolve(force){
           const loveEntries = g.history.splice(before); deaths.push(...nightLove);
           hist({ k: "night", day: g.day, died: deaths.length ? deaths : null });
           loveEntries.forEach(e => g.history.push(e)); }
-        if (deaths.length === 1) log(`🌅 Ξημέρωσε. Τη νύχτα πέθανε ο/η ${nm(deaths[0])}.`);
+        if (deaths.length === 1) log(`🌅 Ξημέρωσε. Τη νύχτα πέθανε: ${nm(deaths[0])}.`);
         else if (deaths.length > 1) log(`🌅 Ξημέρωσε. Τη νύχτα πέθαναν: ${deaths.map(nm).join(", ")}.`);
         else log("🌅 Ξημέρωσε. Κανείς δεν πέθανε απόψε!");
         if (!checkWin(g, log)) { g.phase = "day"; g.dayEnds = g.voteSecs ? Date.now() + g.voteSecs * 1000 : null; log(`☀️ Μέρα ${g.day}: συζητήστε και ψηφίστε ποιον θα βγάλετε.`); }
@@ -2193,7 +2193,7 @@ async function tryResolve(force){
                tie: s.tie ? s.top : null, runoff: roundNo || null, judge: s.judge ? { from: s.judge.from || null } : null });
         if (s.judge) {
           g.judgeUsed = g.judgeUsed || {}; g.judgeUsed[s.judge.by] = true;
-          log(`⚖️ Ο Δικαστής άλλαξε την απόφαση! Βγαίνει ο/η ${nm(s.judge.target)}` + (s.judge.from && s.judge.from !== s.judge.target ? ` αντί για τον/την ${nm(s.judge.from)}.` : "."));
+          log(`⚖️ Ο Δικαστής άλλαξε την απόφαση! Βγαίνει: ${nm(s.judge.target)}` + (s.judge.from && s.judge.from !== s.judge.target ? ` (οι ψήφοι έβγαζαν: ${nm(s.judge.from)}).` : "."));
         }
         if (s.mayorDoubled.length) {
           g.mayorUsed = g.mayorUsed || {};
@@ -2214,14 +2214,14 @@ async function tryResolve(force){
           loveDeaths(g, log);
           const role = eff(g, s.out);
           if (role === "crazy") {
-            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}… που ήταν η Τρέλα!`);
+            log(`🗳️ Η Πόλη έβγαλε: ${nm(s.out)}… που ήταν η Τρέλα!`);
             g.phase = "ended"; g.winner = "crazy";
             log("🏆 Κέρδισε η Τρέλα! Κατάφερε να τη βγάλετε.");
           } else if (role === "kamikaze") {
-            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}… που ήταν ο Καμικάζι! Διαλέγει ποιον θα πάρει μαζί του.`);
+            log(`🗳️ Η Πόλη έβγαλε: ${nm(s.out)}… που ήταν ο Καμικάζι! Διαλέγει ποιον θα πάρει μαζί του.`);
             g.phase = "kamikaze"; g.kami = s.out;
           } else {
-            log(`🗳️ Η Πόλη έβγαλε τον/την ${nm(s.out)}.`);
+            log(`🗳️ Η Πόλη έβγαλε: ${nm(s.out)}.`);
             if (!checkWin(g, log)) goNight(g, log);
           }
         }
@@ -2229,7 +2229,7 @@ async function tryResolve(force){
       } else if (g.phase === "kamikaze") {
         const s = kamiStatus(g, A);
         hist({ k: "kami", day: g.day, by: g.kami, target: (s.target && !deadIn(g, s.target)) ? s.target : null });
-        if (s.target && !deadIn(g, s.target)) { g.dead[s.target] = true; log(`💥 Ο Καμικάζι πήρε μαζί του τον/την ${nm(s.target)}.`); }
+        if (s.target && !deadIn(g, s.target)) { g.dead[s.target] = true; log(`💥 Ο Καμικάζι πήρε μαζί του: ${nm(s.target)}.`); }
         else log("💥 Ο Καμικάζι δεν πήρε κανέναν μαζί του.");
         loveDeaths(g, log);
         g.kami = null;
@@ -2287,7 +2287,7 @@ async function kamikazeNow(target){
     g.log = Object.values(g.log || {});
     const log = t => g.log.push({ t, ts: Date.now() });
     g.dead[pid] = true; g.dead[target] = true;
-    log(`💥 Ο/Η ${nameOf(pid)} ήταν ο Καμικάζι! Αυτοκτόνησε και πήρε μαζί του τον/την ${nameOf(target)}.`);
+    log(`💥 Ο Καμικάζι ήταν: ${nameOf(pid)}! Αυτοκτόνησε και πήρε μαζί του: ${nameOf(target)}.`);
     g.history = Object.values(g.history || {});
     g.history.push({ k: "suicide", day: g.day, phase: g.phase, by: pid, target, ts: Date.now() });
     loveDeaths(g, log);
@@ -2362,14 +2362,14 @@ function deathCause(g){
     const e = H[i];
     if (e.k === "night" && Object.values(e.died || {}).includes(pid)) {
       if (g.roles[pid] === "rapist" && g.rapeInfo && g.rapeInfo.result === "batman")
-        return ["🦇", `Διάλεξες τον/την ${nameOf(g.rapeInfo.target)}, που ήταν ο Μπάτμαν. Ο Μπάτμαν δεν βιάζεται.`];
+        return ["🦇", `Διάλεξες: ${nameOf(g.rapeInfo.target)}, που ήταν ο Μπάτμαν. Ο Μπάτμαν δεν βιάζεται.`];
       return ["🔪", `Σε σκότωσαν οι δολοφόνοι τη Νύχτα ${e.day}.`];
     }
     if (e.k === "day" && e.out === pid) return ["🗳️", `Σε έβγαλε η ψηφοφορία της Μέρας ${e.day}.`];
     if (e.k === "left" && e.id === pid) return ["🚪", "Ο host σε έβγαλε από το παιχνίδι."];
-    if (e.k === "love" && e.id === pid) return ["💔", `Πέθανε ο/η ${nameOf(e.of)}, ο/η ερωτευμένος/η σου, και έφυγες κι εσύ μαζί του/της.`];
-    if ((e.k === "kami" || e.k === "suicide") && e.target === pid) return ["💥", `Ο/Η ${nameOf(e.by)} ήταν ο Καμικάζι και σε πήρε μαζί του.`];
-    if (e.k === "suicide" && e.by === pid) return ["💥", `Αυτοκτόνησες και πήρες μαζί σου τον/την ${nameOf(e.target)}.`];
+    if (e.k === "love" && e.id === pid) return ["💔", `Πέθανε το ταίρι σου (${nameOf(e.of)}) και έφυγες κι εσύ μαζί.`];
+    if ((e.k === "kami" || e.k === "suicide") && e.target === pid) return ["💥", `Ο Καμικάζι (${nameOf(e.by)}) σε πήρε μαζί του.`];
+    if (e.k === "suicide" && e.by === pid) return ["💥", `Αυτοκτόνησες και πήρες μαζί σου: ${nameOf(e.target)}.`];
   }
   return ["☠️", "Βγήκες από το παιχνίδι."];
 }
@@ -2400,7 +2400,7 @@ function phaseSummary(g, fromPk){
     box.appendChild(el("div", "mi", "🌅"));
     box.appendChild(el("div", "mt", "Ξημέρωσε"));
     if (died.length || g.day > 1) box.appendChild(el("p", "mp c", died.length ? (died.length > 1 ? "Τη νύχτα πέθαναν: " : "Τη νύχτα πέθανε: ") + died.map(nameOf).join(", ") : "Κανείς δεν πέθανε απόψε!"));
-    H.slice(n ? H.lastIndexOf(n) + 1 : H.length).forEach(e => { if (e.k === "love") box.appendChild(el("p", "ms", `💔 Ο/Η ${nameOf(e.id)} ήταν ερωτευμένος/η με τον/την ${nameOf(e.of)}.`)); });
+    H.slice(n ? H.lastIndexOf(n) + 1 : H.length).forEach(e => { if (e.k === "love") box.appendChild(el("p", "ms", `💔 ${nameOf(e.of)} και ${nameOf(e.id)} ήταν ερωτευμένοι.`)); });
     nodes.push(box);
     return { nodes, btn: "Πάμε στην ψηφοφορία" };
   }
@@ -2428,7 +2428,7 @@ function phaseSummary(g, fromPk){
   nodes.push(head);
   if (d) nodes.push(historyBlock(d));
   H.slice(d ? H.lastIndexOf(d) + 1 : H.length).forEach(e => { if (e.k === "kami" || e.k === "love") { const bl = historyBlock(e); if (bl) nodes.push(bl); } });
-  if (g.phase === "kamikaze") nodes.push(el("p", "mp c", `Ο/Η ${nameOf(g.kami)} ήταν ο Καμικάζι και διαλέγει ποιον θα πάρει μαζί του…`));
+  if (g.phase === "kamikaze") nodes.push(el("p", "mp c", `Ο Καμικάζι ήταν: ${nameOf(g.kami)}. Διαλέγει ποιον θα πάρει μαζί του…`));
   if (g.phase === "night") nodes.push(el("p", "ms", `🌙 Πέφτει η νύχτα ${g.day}.`));
   return { nodes, btn: "Συνέχεια" };
 }
@@ -2464,7 +2464,7 @@ function renderModals(g, A){
       const box = el("div");
       box.appendChild(el("div", "mi", "💥"));
       box.appendChild(el("div", "mt", "Αυτοκτονία Καμικάζι"));
-      box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(e.by)} ήταν ο Καμικάζι! Αυτοκτόνησε και πήρε μαζί του τον/την ${nameOf(e.target)}.`));
+      box.appendChild(el("p", "mp c", `Ο Καμικάζι ήταν: ${nameOf(e.by)}! Αυτοκτόνησε και πήρε μαζί του: ${nameOf(e.target)}.`));
       modal = { type: "phase", auto: true, data: { nodes: [box], btn: "Εντάξει" } };
     }
   }
@@ -2479,14 +2479,14 @@ function renderModals(g, A){
       box.appendChild(el("div", "mi", info.result === "batman" ? "🦇" : "🎭"));
       if (info.result === "batman") {
         box.appendChild(el("div", "mt", "Ήταν ο Μπάτμαν!"));
-        box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(info.target)} ήταν ο Μπάτμαν, που δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`));
+        box.appendChild(el("p", "mp c", `Ο Μπάτμαν ήταν: ${nameOf(info.target)}, και δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`));
       } else {
         box.appendChild(el("div", "mk", "Ο νέος σου ρόλος"));
         box.appendChild(el("div", "mt", ROLE_BY_ID[info.result].name));
-        box.appendChild(el("p", "mp c", `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}. Ομάδα: ${ROLE_BY_ID[info.result].team}.`));
+        box.appendChild(el("p", "mp c", `Αντέγραψες τον ρόλο από: ${nameOf(info.target)}. Ομάδα: ${ROLE_BY_ID[info.result].team}.`));
         const intel = el("div", "mintel");
         (SEES[info.result] || []).forEach(rid => holders(rid).forEach(id => intel.appendChild(el("p", null, `${ROLE_BY_ID[rid].name}: ${nameOf(id)}`))));
-        const ms = matesOf(g, me); if (ms.length) intel.appendChild(el("p", null, `💕 Είσαι πλέον ερωτευμένος/η με: ${ms.map(nameOf).join(" και ")}. Αν πεθάνει ένας, πεθαίνετε όλοι.`));
+        const ms = matesOf(g, me); if (ms.length) intel.appendChild(el("p", null, `💕 Το ταίρι σου πλέον: ${ms.map(nameOf).join(" και ")}. Αν πεθάνει ένας, πεθαίνετε όλοι.`));
         if (intel.childNodes.length) box.appendChild(intel);
         box.appendChild(el("p", "mp", ROLE_BY_ID[info.result].does));
       }
@@ -2494,12 +2494,12 @@ function renderModals(g, A){
     } else if (rapistId && matesOf(g, me).includes(rapistId)) {
       box.appendChild(el("div", "mi", "💕"));
       box.appendChild(el("div", "mt", "Νέα αναγνώριση"));
-      box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και έγινε κι αυτός ερωτευμένος μαζί σας. Αν πεθάνει ένας από τους τρεις σας, πεθαίνετε όλοι.`));
+      box.appendChild(el("p", "mp c", `Ο Βιαστής ήταν: ${nameOf(rapistId)}, και έγινε κι αυτός ερωτευμένος μαζί σας. Αν πεθάνει ένας από τους τρεις σας, πεθαίνετε όλοι.`));
       modal = { type: "phase", data: { nodes: [box], btn: "Εντάξει" } };
     } else if (rapistId && (SEES[eff(g, me)] || []).includes(eff(g, rapistId))) {
       box.appendChild(el("div", "mi", "🔄"));
       box.appendChild(el("div", "mt", "Νέα αναγνώριση"));
-      box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και είναι πλέον ${ROLE_BY_ID[eff(g, rapistId)].name}.`));
+      box.appendChild(el("p", "mp c", `Ο Βιαστής ήταν: ${nameOf(rapistId)}, και είναι πλέον ${ROLE_BY_ID[eff(g, rapistId)].name}.`));
       modal = { type: "phase", data: { nodes: [box], btn: "Εντάξει" } };
     }
   }
@@ -2600,9 +2600,9 @@ function renderFlow(){
     const rapistId = Object.keys(g.roles).find(id => g.roles[id] === "rapist");
     const lines = [];
     if (rapistId && rapistId !== me && matesOf(g, me).includes(rapistId))
-      lines.push(`Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και είναι πλέον ερωτευμένος/η μαζί σας.`);
+      lines.push(`Ο Βιαστής ήταν: ${nameOf(rapistId)}, και τώρα είναι ερωτευμένος μαζί σας.`);
     if (rapistId && rapistId !== me && (SEES[myRole] || []).includes(eff(g, rapistId)))
-      lines.push(`Ο/Η ${nameOf(rapistId)} ήταν ο Βιαστής και είναι πλέον ${ROLE_BY_ID[eff(g, rapistId)].name}.`);
+      lines.push(`Ο Βιαστής ήταν: ${nameOf(rapistId)}, και είναι πλέον ${ROLE_BY_ID[eff(g, rapistId)].name}.`);
     if (rapistId === me) {
       (SEES[myRole] || []).forEach(rid => holders(rid).forEach(id =>
         lines.push(`${ROLE_BY_ID[rid].name}: ${nameOf(id)}`)));
@@ -2643,8 +2643,8 @@ function renderFlow(){
         const info = g.rapeInfo;
         const d = document.createElement("div"); d.className = "partner";
         d.textContent = info.result === "batman"
-          ? `🦇 Ο/Η ${nameOf(info.target)} ήταν ο Μπάτμαν, που δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`
-          : `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}: τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
+          ? `🦇 Ο Μπάτμαν ήταν: ${nameOf(info.target)}, και δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`
+          : `Αντέγραψες τον ρόλο από: ${nameOf(info.target)}. Τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
         box.appendChild(d);
       }
       aTitle.textContent = "👀 Μάθε τον ρόλο σου";
@@ -2660,7 +2660,7 @@ function renderFlow(){
     if (g.roles[me] === "rapist" && g.day === RAPE_NIGHT && g.rapeInfo && (KILLERS.includes(myRole) || myRole === "doctor")) {
       prog.textContent = "";
       const d = document.createElement("div"); d.className = "partner";
-      d.textContent = `Αντέγραψες τον ρόλο του/της ${nameOf(g.rapeInfo.target)}: τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
+      d.textContent = `Αντέγραψες τον ρόλο από: ${nameOf(g.rapeInfo.target)}. Τώρα είσαι ${ROLE_BY_ID[myRole].name}.`;
       box.appendChild(d);
     }
     sub.textContent = "";
@@ -2678,10 +2678,10 @@ function renderFlow(){
       const info = g.rapeInfo;
       if (info.result === "batman") {
         aTitle.textContent = "🦇 Διάλεξες τον Μπάτμαν!";
-        aNote.textContent = `Ο/Η ${nameOf(info.target)} ήταν ο Μπάτμαν, που δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`;
+        aNote.textContent = `Ο Μπάτμαν ήταν: ${nameOf(info.target)}, και δεν βιάζεται. Πεθαίνεις στο ξημέρωμα.`;
       } else {
         aTitle.textContent = "Ο νέος σου ρόλος: " + ROLE_BY_ID[info.result].name;
-        aNote.textContent = `Αντέγραψες τον ρόλο του/της ${nameOf(info.target)}. `;
+        aNote.textContent = `Αντέγραψες τον ρόλο από: ${nameOf(info.target)}.`;
       }
     } else if (KILLERS.includes(myRole) && st.rapistPending) {
       aTitle.textContent = "⏳ Περιμένετε";
@@ -2754,8 +2754,8 @@ function renderFlow(){
       aNote.textContent = "";
       if (jt) {
         const d = document.createElement("div"); d.className = "partner";
-        d.append("Ο/Η "); const b = document.createElement("b"); b.textContent = nameOf(jt); d.appendChild(b);
-        d.append(" έχει κακό ρόλο. Δεν ξέρεις ποιον ακριβώς.");
+        d.append("Κακό ρόλο έχει: "); const b = document.createElement("b"); b.textContent = nameOf(jt); d.appendChild(b);
+        d.append(". Δεν ξέρεις ποιον ακριβώς.");
         box.appendChild(d);
       }
     } else if (myRole === "doctor" && !st.docTurn) {
@@ -2821,7 +2821,7 @@ function renderFlow(){
         m.append("⚖️ Απόφαση Δικαστή (μία φορά στο παιχνίδι)");
         if (jPick) {
           const t = document.createElement("p"); t.className = "note"; t.style.margin = "8px 0 0";
-          t.append("Θα βγει ο/η "); const bb = document.createElement("b"); bb.textContent = nameOf(jPick); t.appendChild(bb); t.append(", ό,τι κι αν ψηφίσουν.");
+          t.append("Θα βγει: "); const bb = document.createElement("b"); bb.textContent = nameOf(jPick); t.appendChild(bb); t.append(", ό,τι κι αν ψηφίσουν.");
           m.appendChild(t);
           const c = document.createElement("button"); c.type = "button"; c.className = "ghost big"; c.style.marginTop = "8px"; c.textContent = "Ακύρωσε την απόφαση";
           c.onclick = () => set(R(`act/${g.round}/${phaseKey(g)}/judge/${me}`), null);
@@ -2869,7 +2869,7 @@ function renderFlow(){
 
   } else if (g.phase === "kamikaze") {
     title.textContent = "💥 Καμικάζι";
-    sub.textContent = `Ο/Η ${nameOf(g.kami)} ήταν ο Καμικάζι και διαλέγει ποιον θα πάρει μαζί του.`;
+    sub.textContent = `Ο Καμικάζι ήταν: ${nameOf(g.kami)}. Διαλέγει ποιον θα πάρει μαζί του.`;
     if (me === g.kami) {
       aTitle.textContent = "💥 Ποιον παίρνεις μαζί σου;";
       aNote.textContent = "";
@@ -3018,7 +3018,7 @@ function historyBlock(e){
       b.className = "hblock night";
       const h = document.createElement("h3"); h.textContent = `🌙 Νύχτα ${e.day}`; b.appendChild(h);
       if (died.length) {
-        const p = P(b, "", "hres"); p.append(died.length > 1 ? "Τη νύχτα πέθαναν οι " : "Τη νύχτα πέθανε ο/η ");
+        const p = P(b, "", "hres"); p.append(died.length > 1 ? "Τη νύχτα πέθαναν: " : "Τη νύχτα πέθανε: ");
         const x = document.createElement("b"); x.textContent = died.map(nameOf).join(" και "); p.appendChild(x); p.append(".");
       } else P(b, "Τη νύχτα δεν πέθανε κανείς.", "hres");
     } else if (e.k === "day") {
@@ -3039,16 +3039,16 @@ function historyBlock(e){
       }
       if (e.judge) {
         const p = P(b, "", "hres"); p.append("⚖️ Ο Δικαστής άλλαξε την απόφαση!");
-        if (e.judge.from && e.judge.from !== e.out) { p.append(" Οι ψήφοι έβγαζαν τον/την "); const y = document.createElement("b"); y.textContent = nameOf(e.judge.from); p.appendChild(y); p.append("."); }
+        if (e.judge.from && e.judge.from !== e.out) { p.append(" Οι ψήφοι έβγαζαν: "); const y = document.createElement("b"); y.textContent = nameOf(e.judge.from); p.appendChild(y); p.append("."); }
       }
       if (e.out && e.judge) {
-        const p = P(b, "", "hres"); p.append("Με απόφαση του Δικαστή βγήκε ο/η ");
+        const p = P(b, "", "hres"); p.append("Με απόφαση του Δικαστή βγήκε: ");
         const x = document.createElement("b"); x.textContent = nameOf(e.out); p.appendChild(x);
         if (e.note === "crazy") p.append(", που ήταν η Τρέλα");
         if (e.note === "kamikaze") p.append(", που ήταν ο Καμικάζι");
         p.append(".");
       } else if (e.out) {
-        const p = P(b, "", "hres"); p.append("Τελικά ψηφίστηκε και βγήκε ο/η ");
+        const p = P(b, "", "hres"); p.append("Τελικά βγήκε: ");
         const x = document.createElement("b"); x.textContent = nameOf(e.out); p.appendChild(x);
         if (e.note === "crazy") p.append(", που ήταν η Τρέλα");
         if (e.note === "kamikaze") p.append(", που ήταν ο Καμικάζι");
@@ -3060,16 +3060,16 @@ function historyBlock(e){
       } else P(b, e.runoff ? "Ισοψηφία και στην 3η ψηφοφορία, οπότε δεν βγήκε κανείς." : "Δεν βγήκε κανείς.", "hres");
     } else if (e.k === "love") {
       b.className = "hblock";
-      P(b, `💔 Ο/Η ${nameOf(e.id)} πέθανε μαζί με τον/την ${nameOf(e.of)}. Ήταν ερωτευμένοι.`, "hres");
+      P(b, `💔 ${nameOf(e.of)} και ${nameOf(e.id)} ήταν ερωτευμένοι: έφυγαν μαζί.`, "hres");
     } else if (e.k === "left") {
       b.className = "hblock";
-      P(b, `🚪 Ο/Η ${nameOf(e.id)} βγήκε από το παιχνίδι.`, "hres");
+      P(b, `🚪 Βγήκε από το παιχνίδι: ${nameOf(e.id)}.`, "hres");
     } else if (e.k === "kami" || e.k === "suicide") {
       b.className = "hblock";
       const h = document.createElement("h3");
       h.textContent = e.k === "kami" ? `💥 Καμικάζι (Μέρα ${e.day})` : `💥 Αυτοκτονία Καμικάζι (${e.phase === "night" ? "Νύχτα" : "Μέρα"} ${e.day})`;
       b.appendChild(h);
-      P(b, e.target ? `Ο/Η ${nameOf(e.by)} πήρε μαζί του τον/την ${nameOf(e.target)}.` : `Ο/Η ${nameOf(e.by)} δεν πήρε κανέναν μαζί του.`, "hres");
+      P(b, e.target ? `Ο Καμικάζι (${nameOf(e.by)}) πήρε μαζί του: ${nameOf(e.target)}.` : `Ο Καμικάζι (${nameOf(e.by)}) δεν πήρε κανέναν μαζί του.`, "hres");
     } else return null;
     return b;
   }
