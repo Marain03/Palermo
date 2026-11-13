@@ -131,12 +131,13 @@
   button.ghost.mayorbtn{border-color:color-mix(in srgb, var(--gold) 55%, var(--line));color:var(--gold)}
   .camwrap{position:fixed;inset:0;background:rgba(6,4,8,.92);z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
   .camcard{width:100%;max-width:420px}
-  .camview{position:relative;width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:#000;border:3px solid var(--accent);margin:0 auto 18px;max-width:340px}
+  .camview{position:relative;width:100%;aspect-ratio:1;border-radius:24px;overflow:hidden;background:#000;margin:0 auto 22px;max-width:300px}
   .camview video,.camview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .camview video.mirror{transform:scaleX(-1)}
   .cambtns{display:flex;align-items:center;justify-content:center;gap:16px}
-  #camSnap{width:72px;height:72px;border-radius:50%;font-size:30px;padding:0}
-  #camDone button{flex:1;max-width:160px}
+  #camSnap{width:70px;height:70px;border-radius:50%;padding:0;background:#fff;border:5px solid rgba(255,255,255,.35);background-clip:padding-box}
+  #camSnap:active{transform:scale(.94)}
+  .camcancel{display:block;margin:16px auto 0;background:none;border:0;color:var(--muted);font-size:15px;width:auto}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -618,14 +619,9 @@
       <img id="camShot" alt="" class="hidden">
     </div>
     <div class="cambtns" id="camLive">
-      <button type="button" class="ghost" id="camCancel">Άκυρο</button>
-      <button type="button" id="camSnap" aria-label="Τράβηξε">📸</button>
-      <button type="button" class="ghost" id="camSwitch" aria-label="Άλλη κάμερα">🔄</button>
+      <button type="button" id="camSnap" aria-label="Τράβηξε φωτογραφία"></button>
     </div>
-    <div class="cambtns hidden" id="camDone">
-      <button type="button" class="ghost" id="camRetry">↻ Ξανά</button>
-      <button type="button" id="camUse">✓ Αυτή</button>
-    </div>
+    <button type="button" class="camcancel" id="camCancel">Άκυρο</button>
   </div>
 </div>
 <input type="file" accept="image/*" id="photoInput" hidden>
@@ -792,7 +788,7 @@ const ROLE_BY_ID = {
 let cfg = null;
 // Ρόλοι με αριθμό (ο host μπορεί να βάλει κάποιον πάνω από μία φορά). Οι Ερωτευμένοι μετράνε σε ζευγάρια.
 const COUNTABLE = ["killerOpen", "killerHidden", "cop", "doctor", "whore", "batman", "rapist", "mayor", "judge", "kamikaze", "crazy", "lover"];
-const COUNT_MIN = { killerOpen: 1, killerHidden: 1 };
+const COUNT_MIN = {};
 const COUNT_MAX = { rapist: 1, killerOpen: 4, killerHidden: 6, lover: 4, judge: 2 };
 const seats = (rid, k) => rid === "lover" ? 2 * k : k;
 function autoCounts(n){
@@ -806,8 +802,8 @@ function roleCounts(n){
     const c = {};
     if (cfg.counts) COUNTABLE.forEach(x => { const v = +cfg.counts[x] || 0; if (v) c[x] = v; });
     else OPTIONAL.forEach(x => { if (cfg.roles && cfg.roles[x]) c[x] = 1; });
-    c.killerHidden = Math.max(1, c.killerHidden || 1);
-    c.killerOpen = Math.max(1, c.killerOpen || 1);
+    c.killerHidden = c.killerHidden || 0;
+    c.killerOpen = c.killerOpen || 0;
     return c;
   }
   return autoCounts(n);
@@ -1539,13 +1535,11 @@ async function openCamera(){
   if (sheetKind === "photo") closeSheet();
   camResult = null;
   $("camShot").classList.add("hidden"); $("camVideo").classList.remove("hidden");
-  $("camLive").classList.remove("hidden"); $("camDone").classList.add("hidden");
   $("cam").classList.remove("hidden");
   try { await camStart(); }
   catch (e) { camClose(); $("photoCam").click(); }       // χωρίς άδεια κάμερας → η κάμερα του κινητού
 }
 $("camCancel").onclick = camClose;
-$("camSwitch").onclick = async () => { camFacing = camFacing === "user" ? "environment" : "user"; try { await camStart(); } catch (e) {} };
 $("camSnap").onclick = () => {
   const v = $("camVideo"); if (!v.videoWidth) return;
   const S = 160, c = document.createElement("canvas"); c.width = c.height = S;
@@ -1554,12 +1548,9 @@ $("camSnap").onclick = () => {
   if (camFacing === "user") { ctx.translate(S, 0); ctx.scale(-1, 1); }   // ίδια με την προεπισκόπηση
   ctx.drawImage(v, sx, sy, k, k, 0, 0, S, S);
   camResult = c.toDataURL("image/jpeg", 0.85);
-  camStop();
-  $("camShot").src = camResult; $("camShot").classList.remove("hidden"); $("camVideo").classList.add("hidden");
-  $("camLive").classList.add("hidden"); $("camDone").classList.remove("hidden");
+  useCamShot();
 };
-$("camRetry").onclick = () => openCamera();
-$("camUse").onclick = async () => {
+async function useCamShot(){
   const url = camResult; camClose(); if (!url) return;
   if (players[pid]) await update(R("players/" + pid), { photo: url });
   else { pendingPhoto = url; showPreview($("avPreview"), url); $("avPickText").textContent = "Άλλαξε φωτογραφία"; }
@@ -1827,7 +1818,8 @@ function renderHost(container){
   const tooMany = deckNow.length > count;
   const badN = deckNow.filter(x => KILLERS.includes(x)).length;
   const tooBad = !tooMany && count >= MIN_PLAYERS && badN * 2 >= count;     // οι κακοί δεν πρέπει να είναι οι μισοί από την αρχή
-  const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS && !tooMany && !tooBad;
+  const noKiller = badN === 0;
+  const ok = count >= MIN_PLAYERS && count <= MAX_PLAYERS && !tooMany && !tooBad && !noKiller;
   act("start").disabled = !ok;
 
   // Επιλογή ρόλων (με αριθμό)
@@ -1839,7 +1831,7 @@ function renderHost(container){
     const b = document.createElement("span"); b.textContent = (cfg && cfg.custom) ? "δική σου επιλογή" : "αυτόματα";
     h.append(a, b); rp.appendChild(h);
     const fixed = document.createElement("p"); fixed.className = "note"; fixed.style.margin = "0 0 8px";
-    fixed.textContent = "Υπάρχει πάντα τουλάχιστον ένας Φανερός και ένας Κρυφός Δολοφόνος. Όσες θέσεις περισσεύουν γίνονται Πολίτες.";
+    fixed.textContent = "Χρειάζεται τουλάχιστον ένας δολοφόνος. Όσες θέσεις περισσεύουν γίνονται Πολίτες.";
     rp.appendChild(fixed);
     const list = document.createElement("div"); list.className = "steplist";
     const setCount = (rid, v) => {
@@ -1913,6 +1905,7 @@ function renderHost(container){
     : count > MAX_PLAYERS ? `Είναι ${count} παίκτες, βγάλε ${count - MAX_PLAYERS} με το ×.`
     : count < MIN_PLAYERS ? `Χρειάζονται ακόμα ${MIN_PLAYERS - count} παίκτες για να ξεκινήσει (${count}/${MIN_PLAYERS}).`
     : tooMany ? "Διάλεξε λιγότερους ειδικούς ρόλους ή περίμενε κι άλλους παίκτες."
+    : noKiller ? "⚠️ Χρειάζεται τουλάχιστον ένας δολοφόνος (Φανερός ή Κρυφός)."
     : tooBad ? "Βγάλε κάποιον δολοφόνο ή περίμενε κι άλλους παίκτες."
     : `Είστε ${count}. Πάτα όταν είναι όλοι μέσα. Μπορούν να μπουν μέχρι ${MAX_PLAYERS}.`;
   act("newRound").classList.toggle("hidden", !playing);
@@ -2005,7 +1998,10 @@ function docBlocked(g, target, doc){
 // --- Κατάσταση ψηφοφορίας ---
 function dayStatus(g, A){
   const cands = g.runoff ? Object.values(g.runoff.cands || {}).filter(id => !deadIn(g, id)) : null;
-  const al = aliveIn(g).filter(id => !cands || !cands.includes(id));      // στη 2η ψηφοφορία δεν ψηφίζουν οι υποψήφιοι
+  const alive = aliveIn(g);
+  // στη 2η/3η ψηφοφορία δεν ψηφίζουν οι υποψήφιοι — εκτός αν ισοψήφησαν όλοι, οπότε ψηφίζουν όλοι
+  const excl = cands && cands.length < alive.length ? cands : [];
+  const al = alive.filter(id => !excl.includes(id));
   const votes = A.vote || {};
   const voted = al.filter(id => votes[id] && (!cands || cands.includes(votes[id])));
   const tally = {}, voters = {};
@@ -2028,7 +2024,7 @@ function dayStatus(g, A){
   const judge = judgeBy ? { by: judgeBy, target: jl[judgeBy], from: out } : null;
   if (judge) out = judge.target;
   return { done: voted.length === al.length || (!!cands && cands.length === 0), voted: voted.length, total: al.length, tally, voters, out, mayorDoubled,
-           tie: !judge && max > 0 && top.length > 1, top, cands, judge };
+           tie: !judge && max > 0 && top.length > 1, top, cands, judge, excl };
 }
 function kamiStatus(g, A){
   const t = (A.kami || {})[g.kami] || null;
@@ -2134,7 +2130,7 @@ async function tryResolve(force){
         const s = dayStatus(g, A);
         const votesMap = {};
         const cands = s.cands;
-        aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v) && (!cands || (cands.includes(v) && !cands.includes(id)))) votesMap[id] = v; });
+        aliveIn(g).forEach(id => { const v = (A.vote || {})[id]; if (v && v !== "skip" && v !== id && !deadIn(g, v) && (!cands || (cands.includes(v) && !s.excl.includes(id)))) votesMap[id] = v; });
         const roundNo = g.runoff ? (g.runoff.n || 1) : 0;          // 0 = κανονική, 1 = 2η, 2 = 3η ψηφοφορία
         const goRunoff = roundNo < 2 && !s.out && s.tie;
         const outRole = s.out ? eff(g, s.out) : null;
@@ -2333,7 +2329,9 @@ function phaseSummary(g, fromPk){
     nodes.push(head);
     if (d0) nodes.push(historyBlock(d0));
     const c = Object.values(g.runoff.cands || {});
-    nodes.push(el("p", "mp c", c.includes(pid)
+    const allTied = c.length >= aliveIn(g).length;
+    nodes.push(el("p", "mp c", allTied ? "Ισοψήφησαν όλοι! Ξαναψηφίζετε όλοι."
+      : c.includes(pid)
       ? "Είσαι στην ισοψηφία. Οι υπόλοιποι θα ψηφίσουν ξανά ποιος θα βγει."
       : `Ξαναψηφίστε ανάμεσα σε ${c.map(nameOf).join(" και ")}.`));
     return { nodes, btn: `Πάμε στην ${(g.runoff.n || 1) + 1}η ψηφοφορία` };
@@ -2719,7 +2717,7 @@ function renderFlow(){
     if (talk) { const c = document.createElement("span"); c.className = "clock"; c.id = "voteClock"; sub.appendChild(c); tickClock(); }
     const st = dayStatus(g, A);
     const mine = (A.vote || {})[me];
-    const isCand = !!st.cands && st.cands.includes(me);
+    const isCand = st.excl.includes(me);
     aTitle.textContent = st.cands ? `⚖️ ${(g.runoff.n || 1) + 1}η ψηφοφορία` + (dead || isCand ? " (παρακολουθείς)" : "") : dead ? "🗳️ Ψηφοφορία (παρακολουθείς)" : "🗳️ Ψήφισε";
     aNote.textContent = st.cands ? `Ισοψηφία: ${st.cands.map(nameOf).join(" και ")}.` + (isCand ? " Ψηφίζουν οι υπόλοιποι." : "") : talk ? "Συζητήστε. Η ψηφοφορία ανοίγει όταν τελειώσει ο χρόνος." : "";
     const tallyEl = id => {
@@ -2843,8 +2841,8 @@ function renderFlow(){
       else if (KILLERS.includes(myRole) && st2.killersTurn && !st2.target && !(A.kill || {})[me]) myTurn = true;
       else if (myRole === "doctor" && st2.docTurn && !st2.saves[me]) myTurn = true;
     } else if (g.phase === "day") {
-      const cc = g.runoff ? Object.values(g.runoff.cands || {}) : null;
-      myTurn = !(A.vote || {})[me] && !(cc && cc.includes(me)) && !talking(g);
+      const ds = dayStatus(g, A);
+      myTurn = !(A.vote || {})[me] && !ds.excl.includes(me) && !talking(g);
     } else if (g.phase === "kamikaze") {
       myTurn = me === g.kami && !(A.kami || {})[me];
     }
