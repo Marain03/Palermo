@@ -2077,6 +2077,7 @@ async function rapeNow(target){
 // --- Καμικάζι: αυτοκτονία οποιαδήποτε στιγμή ---
 let kamiArm = false, kamiPick = null;
 let judgeArm = false, judgePick = null;
+let mayorArm = false;
 async function kamikazeNow(target){
   const expectRound = game.round;
   await runTransaction(R("game"), cur => {
@@ -2599,12 +2600,25 @@ function renderFlow(){
       if ((g.mayorUsed || {})[me]) {
         m.textContent = "⭐ Έχεις ήδη χρησιμοποιήσει τη διπλή σου ψήφο σε αυτό το παιχνίδι.";
       } else {
-        m.append("⭐ Διπλή ψήφος (μία φορά στο παιχνίδι)");
-        const b = document.createElement("button"); b.type = "button";
-        b.className = on ? "big" : "ghost big"; b.style.marginTop = "10px";
-        b.textContent = on ? "⭐ Διπλή ψήφος: ΕΝΕΡΓΗ (πάτα για ακύρωση)" : "⭐ Χρησιμοποίησε τη διπλή ψήφο σήμερα";
-        b.onclick = () => set(R(`act/${g.round}/${phaseKey(g)}/double/${me}`), on ? null : true);
-        m.appendChild(b);
+        if (on) {
+          m.append("⭐ Διπλή ψήφος ενεργή: η ψήφος σου σήμερα μετράει για δύο.");
+        } else if (mayorArm) {
+          // Επιβεβαίωση με ✓ / ✗, όπως η ψήφος
+          const c = document.createElement("div"); c.className = "voteconfirm"; c.style.marginTop = "0";
+          const q = document.createElement("div"); q.className = "vq"; q.append("Χρησιμοποιείς τη ");
+          const bb = document.createElement("b"); bb.textContent = "διπλή ψήφο"; q.appendChild(bb); q.append(" σήμερα;");
+          const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.setAttribute("aria-label", "Ναι");
+          yes.onclick = () => { mayorArm = false; set(R(`act/${g.round}/${phaseKey(g)}/double/${me}`), true); };
+          const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.setAttribute("aria-label", "Όχι");
+          no.onclick = () => { mayorArm = false; renderFlow(); };
+          c.append(q, yes, no); m.appendChild(c);
+        } else {
+          m.append("⭐ Διπλή ψήφος (μία φορά στο παιχνίδι)");
+          const b = document.createElement("button"); b.type = "button"; b.className = "ghost big"; b.style.marginTop = "10px";
+          b.textContent = "⭐ Χρησιμοποίησε τη διπλή ψήφο";
+          b.onclick = () => { mayorArm = true; renderFlow(); };
+          m.appendChild(b);
+        }
       }
       box.appendChild(m);
     }
