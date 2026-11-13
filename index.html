@@ -128,6 +128,7 @@
   .roleinfobody p,.roleinfobody li{margin:0 0 6px;font-size:14px;line-height:1.55}
   .roleinfobody ul{margin:0;padding-left:18px;list-style:disc}
   .ri-team{color:var(--muted);font-size:13px!important}
+  button.ghost.mayorbtn{border-color:color-mix(in srgb, var(--gold) 55%, var(--line));color:var(--gold)}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -2613,8 +2614,8 @@ function renderFlow(){
           no.onclick = () => { mayorArm = false; renderFlow(); };
           c.append(q, yes, no); m.appendChild(c);
         } else {
-          m.append("⭐ Διπλή ψήφος (μία φορά στο παιχνίδι)");
-          const b = document.createElement("button"); b.type = "button"; b.className = "ghost big"; b.style.marginTop = "10px";
+          m.className = ""; m.style.marginTop = "10px";
+          const b = document.createElement("button"); b.type = "button"; b.className = "ghost big mayorbtn";
           b.textContent = "⭐ Χρησιμοποίησε τη διπλή ψήφο";
           b.onclick = () => { mayorArm = true; renderFlow(); };
           m.appendChild(b);
