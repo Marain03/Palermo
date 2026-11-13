@@ -289,6 +289,11 @@
   .dead .pname{text-decoration:line-through;color:var(--muted)}
   .odot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-left:8px;vertical-align:middle}
   .odot.on{background:var(--ok)}
+  .choice.confirming{cursor:default;padding-top:8px;padding-bottom:8px}
+  .inlineconfirm{display:flex;gap:8px;margin-left:auto;flex:none}
+  .inlineconfirm .vyes,.inlineconfirm .vno{width:42px;height:42px;padding:0;border-radius:50%;font-size:20px;line-height:1}
+  .inlineconfirm .vyes{background:var(--ok);color:#fff;border:0}
+  .inlineconfirm .vno{background:transparent;border:1px solid var(--line);color:var(--wine)}
   .voteconfirm{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:4px;padding:12px 14px;border-radius:12px;
     background:var(--raise);border:1px solid var(--accent);position:sticky;bottom:0;animation:mpop .2s ease}
   .voteconfirm .vq{flex:1;font-size:16px}
@@ -2141,9 +2146,10 @@ function confirmRow(before, name, after, onYes, onNo){
 let nightPick = null, nightPickKey = null;     // επιλογή που περιμένει ✓
 
 // --- Οθόνη "Παιχνίδι" ---
-function choiceBtn(label, sel, onClick, right, disabled){
-  const b = document.createElement("button"); b.type = "button";
-  b.className = "choice" + (sel ? " sel" : "");
+function choiceBtn(label, sel, onClick, right, disabled, confirm){
+  const b = document.createElement(confirm ? "div" : "button");
+  if (!confirm) b.type = "button";
+  b.className = "choice" + (sel || confirm ? " sel" : "") + (confirm ? " confirming" : "");
   if (disabled) b.disabled = true;
   const l = document.createElement("span"); l.textContent = label; b.appendChild(l);
   // φωτογραφία του παίκτη (αν η ετικέτα είναι όνομα παίκτη)
@@ -2151,6 +2157,15 @@ function choiceBtn(label, sel, onClick, right, disabled){
     .sort((x, y) => players[y].name.length - players[x].name.length)[0];
   if (who) { const w = document.createElement("span"); w.className = "lbl"; w.appendChild(avatarEl(who)); b.insertBefore(w, l); w.appendChild(l); }
   if (right) b.appendChild(right);
+  if (confirm) {
+    const box = document.createElement("span"); box.className = "inlineconfirm";
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.setAttribute("aria-label", "Ναι");
+    yes.onclick = e => { e.stopPropagation(); confirm.yes(); };
+    const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.setAttribute("aria-label", "Όχι");
+    no.onclick = e => { e.stopPropagation(); confirm.no(); };
+    box.append(yes, no); b.appendChild(box);
+    return b;
+  }
   if (sel) { const t = document.createElement("span"); t.className = "tick"; t.textContent = "✔"; t.setAttribute("aria-label", "επιλεγμένο"); b.appendChild(t); }
   b.onclick = onClick;
   return b;
@@ -2450,8 +2465,8 @@ function renderFlow(){
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
       aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); })));
-      if (rapePick) box.appendChild(confirmRow("Βιάζεις τον/την ", nameOf(rapePick), ";", () => rapeNow(rapePick), () => { rapePick = null; renderFlow(); }));
+        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); }, null, false,
+          rapePick === id ? { yes: () => rapeNow(rapePick), no: () => { rapePick = null; renderFlow(); } } : null)));
     } else if (st.rapistPending) {
       aTitle.textContent = "⏳ Περίμενε λίγο";
       aNote.textContent = "";
@@ -2489,8 +2504,8 @@ function renderFlow(){
       aTitle.textContent = "Διάλεξε ποιον θα βιάσεις";
       aNote.textContent = "Παίρνεις τον ρόλο του. Αν είναι ο Μπάτμαν, πεθαίνεις.";
       al.filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); })));
-      if (rapePick) box.appendChild(confirmRow("Βιάζεις τον/την ", nameOf(rapePick), ";", () => rapeNow(rapePick), () => { rapePick = null; renderFlow(); }));
+        box.appendChild(choiceBtn(nameOf(id), rapePick === id, () => { rapePick = rapePick === id ? null : id; renderFlow(); }, null, false,
+          rapePick === id ? { yes: () => rapeNow(rapePick), no: () => { rapePick = null; renderFlow(); } } : null)));
     } else if (g.roles[me] === "rapist" && g.day === RAPE_NIGHT && g.rapeInfo && !KILLERS.includes(myRole) && myRole !== "doctor") {
       const info = g.rapeInfo;
       if (info.result === "batman") {
@@ -2526,9 +2541,8 @@ function renderFlow(){
       } else {
         if (nightPickKey !== phaseKey(g)) { nightPick = null; nightPickKey = phaseKey(g); }
         al.filter(id => !KILLERS.includes(eff(g, id))).forEach(id =>
-          box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); })));
-        if (nightPick && nightPick !== mine) box.appendChild(confirmRow("Σκοτώνετε τον/την ", nameOf(nightPick), ";",
-          () => { const t = nightPick; nightPick = null; doAction("kill", t); }, () => { nightPick = null; renderFlow(); }));
+          box.appendChild(choiceBtn(nameOf(id), (nightPick || mine) === id, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, null, false,
+            nightPick === id && nightPick !== mine ? { yes: () => { const t = nightPick; nightPick = null; doAction("kill", t); }, no: () => { nightPick = null; renderFlow(); } } : null)));
       }
     } else if (myRole === "doctor" && !st.docTurn) {
       aTitle.textContent = "😴 Περίμενε τη σειρά σου";
@@ -2541,10 +2555,9 @@ function renderFlow(){
       al.forEach(id => {
         const why = docBlocked(g, id, me);
         box.appendChild(choiceBtn(nameOf(id) + (id === me ? " (εσύ)" : "") + (why ? " · " + why : ""),
-          (nightPick || mine) === id && !why, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, null, !!why));
+          (nightPick || mine) === id && !why, () => { nightPick = nightPick === id ? null : id; renderFlow(); }, null, !!why,
+          nightPick === id && nightPick !== mine && !why ? { yes: () => { const t = nightPick; nightPick = null; doAction("save", t); }, no: () => { nightPick = null; renderFlow(); } } : null));
       });
-      if (nightPick && nightPick !== mine) box.appendChild(confirmRow(nightPick === me ? "Σώζεις " : "Σώζεις τον/την ", nightPick === me ? "τον εαυτό σου" : nameOf(nightPick), ";",
-        () => { const t = nightPick; nightPick = null; doAction("save", t); }, () => { nightPick = null; renderFlow(); }));
     } else {
       aTitle.textContent = "😴 Κοιμάσαι";
       aNote.textContent = "";
@@ -2582,23 +2595,8 @@ function renderFlow(){
       if (votePickDay !== g.round + ":" + phaseKey(g)) { votePick = null; votePickDay = g.round + ":" + phaseKey(g); }
       const locked = dead || isCand || talk;
       (st.cands || al).filter(id => id !== me).forEach(id =>
-        box.appendChild(choiceBtn(nameOf(id), votePick === id, locked ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); })));
-      if (votePick && !locked) {
-        // Επιβεβαίωση: ✓ ή ✗
-        const c = document.createElement("div"); c.className = "voteconfirm";
-        const q = document.createElement("div"); q.className = "vq";
-        q.append("Ψηφίζεις ");
-        const b = document.createElement("b"); b.textContent = nameOf(votePick); q.appendChild(b);
-        q.append(";");
-        const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.title = "Ναι, οριστικά";
-        yes.setAttribute("aria-label", "Ναι, οριστικά");
-        yes.onclick = () => { const v = votePick; votePick = null; doAction("vote", v); };
-        const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.title = "Όχι";
-        no.setAttribute("aria-label", "Όχι, ακύρωση");
-        no.onclick = () => { votePick = null; renderFlow(); };
-        c.append(q, yes, no);
-        box.appendChild(c);
-      }
+        box.appendChild(choiceBtn(nameOf(id), votePick === id, locked ? () => {} : () => { votePick = votePick === id ? null : id; renderFlow(); }, null, false,
+          votePick === id && !locked ? { yes: () => { const v = votePick; votePick = null; doAction("vote", v); }, no: () => { votePick = null; renderFlow(); } } : null)));
     }
     if (!dead && myRole === "judge" && !talk) {
       const jUsed = !!(g.judgeUsed || {})[me];
@@ -2616,11 +2614,10 @@ function renderFlow(){
           m.appendChild(c);
         } else if (judgeArm) {
           const ch = document.createElement("div"); ch.className = "choices"; ch.style.marginTop = "8px";
-          al.filter(id => id !== me).forEach(id => ch.appendChild(choiceBtn(nameOf(id), judgePick === id, () => { judgePick = id; renderFlow(); })));
+          al.filter(id => id !== me).forEach(id => ch.appendChild(choiceBtn(nameOf(id), judgePick === id, () => { judgePick = id; renderFlow(); }, null, false,
+            judgePick === id ? { yes: () => { const t = judgePick; judgeArm = false; judgePick = null; set(R(`act/${g.round}/${phaseKey(g)}/judge/${me}`), t); },
+                                 no: () => { judgePick = null; renderFlow(); } } : null)));
           m.appendChild(ch);
-          if (judgePick) m.appendChild(confirmRow("Να βγει ο/η ", nameOf(judgePick), ";",
-            () => { const t = judgePick; judgeArm = false; judgePick = null; set(R(`act/${g.round}/${phaseKey(g)}/judge/${me}`), t); },
-            () => { judgeArm = false; judgePick = null; renderFlow(); }));
         } else {
           const b = document.createElement("button"); b.type = "button"; b.className = "ghost big"; b.style.marginTop = "10px";
           b.textContent = "⚖️ Άλλαξε την απόφαση σήμερα";
@@ -2640,14 +2637,9 @@ function renderFlow(){
           m.append("⭐ Διπλή ψήφος ενεργή: η ψήφος σου σήμερα μετράει για δύο.");
         } else if (mayorArm) {
           // Επιβεβαίωση με ✓ / ✗, όπως η ψήφος
-          const c = document.createElement("div"); c.className = "voteconfirm"; c.style.marginTop = "0";
-          const q = document.createElement("div"); q.className = "vq"; q.append("Χρησιμοποιείς τη ");
-          const bb = document.createElement("b"); bb.textContent = "διπλή ψήφο"; q.appendChild(bb); q.append(" σήμερα;");
-          const yes = document.createElement("button"); yes.type = "button"; yes.className = "vyes"; yes.textContent = "✓"; yes.setAttribute("aria-label", "Ναι");
-          yes.onclick = () => { mayorArm = false; set(R(`act/${g.round}/${phaseKey(g)}/double/${me}`), true); };
-          const no = document.createElement("button"); no.type = "button"; no.className = "vno"; no.textContent = "✗"; no.setAttribute("aria-label", "Όχι");
-          no.onclick = () => { mayorArm = false; renderFlow(); };
-          c.append(q, yes, no); m.appendChild(c);
+          m.className = ""; m.style.marginTop = "10px";
+          m.appendChild(choiceBtn("⭐ Διπλή ψήφος", true, () => {}, null, false,
+            { yes: () => { mayorArm = false; set(R(`act/${g.round}/${phaseKey(g)}/double/${me}`), true); }, no: () => { mayorArm = false; renderFlow(); } }));
         } else {
           m.className = ""; m.style.marginTop = "10px";
           const b = document.createElement("button"); b.type = "button"; b.className = "ghost big mayorbtn";
