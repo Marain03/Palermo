@@ -138,6 +138,7 @@
   #camSnap{width:70px;height:70px;border-radius:50%;padding:0;background:#fff;border:5px solid rgba(255,255,255,.35);background-clip:padding-box}
   #camSnap:active{transform:scale(.94)}
   .camcancel{display:block;margin:16px auto 0;background:none;border:0;color:var(--muted);font-size:15px;width:auto}
+  .killwarn{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:var(--wine-soft);color:var(--wine);font-weight:600;font-size:14px}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -792,7 +793,7 @@ const COUNT_MIN = {};
 const COUNT_MAX = { rapist: 1, killerOpen: 4, killerHidden: 6, lover: 4, judge: 2 };
 const seats = (rid, k) => rid === "lover" ? 2 * k : k;
 function autoCounts(n){
-  const c = { killerOpen: 1, killerHidden: 1 + Math.floor(Math.max(0, n - 12) / 4) };
+  const c = { killerOpen: 0, killerHidden: 0 };       // τους δολοφόνους τους βάζει πάντα ο host
   OPTIONAL.slice(0, Math.max(0, n - 3)).forEach(x => c[x] = 1);
   if (n >= 13) c.lover = 1;
   return c;
@@ -1831,8 +1832,12 @@ function renderHost(container){
     const b = document.createElement("span"); b.textContent = (cfg && cfg.custom) ? "δική σου επιλογή" : "αυτόματα";
     h.append(a, b); rp.appendChild(h);
     const fixed = document.createElement("p"); fixed.className = "note"; fixed.style.margin = "0 0 8px";
-    fixed.textContent = "Χρειάζεται τουλάχιστον ένας δολοφόνος. Όσες θέσεις περισσεύουν γίνονται Πολίτες.";
+    fixed.textContent = "Όσες θέσεις περισσεύουν γίνονται Πολίτες.";
     rp.appendChild(fixed);
+    if (!deckNow.some(x => KILLERS.includes(x))) {
+      const w = document.createElement("p"); w.className = "killwarn"; w.textContent = "⚠️ Χρειάζεται τουλάχιστον 1 δολοφόνος.";
+      rp.appendChild(w);
+    }
     const list = document.createElement("div"); list.className = "steplist";
     const setCount = (rid, v) => {
       const counts = {}; COUNTABLE.forEach(x => counts[x] = cnow[x] || 0);
@@ -2209,6 +2214,11 @@ async function rapeNow(target){
         cur.couple = Object.assign({}, cur.couple || {});
         group.forEach(id => { cur.couple[id] = [...matesOf(cur, id), pid]; });
         cur.couple[pid] = group;
+      }
+      // αν ο Βιαστής έγινε δολοφόνος και οι δολοφόνοι έφτασαν τους υπόλοιπους, το παιχνίδι τελειώνει αμέσως
+      if (KILLERS.includes(tRole)) {
+        cur.log = Object.values(cur.log || {});
+        checkWin(cur, t => cur.log.push({ t, ts: Date.now() }));
       }
     }
     return cur;
