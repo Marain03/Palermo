@@ -114,6 +114,17 @@
   .customtime.on input{border-color:var(--accent)}
   .clock{display:inline-block;margin-top:6px;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--text)}
   .clock.low{color:var(--wine)}
+  .netbanner{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:30;
+    background:var(--accent);color:#fff;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.4);white-space:nowrap}
+  .tourcard{width:calc(100% - 36px);max-width:400px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px 22px 20px;text-align:center;animation:sheetup .25s ease}
+  .tourcard .ti{font-size:46px;line-height:1}
+  .tourcard h2{margin:12px 0 8px}
+  .tourcard p{color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;min-height:72px}
+  .tourdots{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
+  .tourdots span{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .tourdots span.on{background:var(--accent)}
+  .tourbtns{display:flex;gap:10px}
+  .tourbtns button{flex:1}
   .roomcard{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .roomcode{cursor:pointer;font-family:var(--serif);font-size:34px;letter-spacing:.18em;color:var(--head);line-height:1.1;margin-top:2px}
   .hidden{display:none!important}
@@ -211,6 +222,8 @@
   /* τα περιεχόμενα των καρτελών να μη «ζουλιούνται» */
   .pane[data-pane="flow"] > *, .pane[data-pane="role"] > *, .pane[data-pane="hist"] > *{flex-shrink:0}
   .rolecard.closed .tapnote{color:var(--muted)}
+  .rolecard{-webkit-touch-callout:none;touch-action:none;-webkit-user-select:none}
+  .rolecard:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   .rolelabel{color:var(--card-muted);font-size:14px;font-family:var(--serif);font-style:italic}
   .rolename{font-family:var(--serif);font-size:40px;line-height:1.1;font-weight:400;color:var(--card-hi);margin-top:8px}
   .intel{margin:22px auto 0;max-width:340px;padding-top:16px;border-top:1px solid var(--card-line);font-size:15px;line-height:1.6}
@@ -296,6 +309,10 @@
   .modal .ms{color:var(--muted);font-size:14px;margin-bottom:12px}
   .modal .mp{font-size:15px;line-height:1.6;margin:8px 0;text-align:left}
   .modal .mp.c{text-align:center}
+  .autobar{height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:10px}
+  .autobar span{display:block;height:100%;background:var(--accent);transform-origin:left;animation:autobar linear forwards}
+  @keyframes autobar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+  @media (prefers-reduced-motion: reduce){ .autobar span{animation:none;transform:scaleX(.5)} }
   .modal .mintel{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:15px;line-height:1.6}
   .modal .mintel p{margin:0 0 6px}
   .modal .mintel b{color:var(--wine)}
@@ -496,15 +513,16 @@
     <div class="rolecard closed" id="roleCard">
       <div id="roleClosed">
         <div class="rolename">Ο ρόλος σου</div>
-        <div class="tapnote">Πάτα για να τον δεις</div>
+        <div class="tapnote">Κράτα πατημένο για να τον δεις</div>
       </div>
       <div id="roleOpen" class="hidden">
         <div class="rolelabel" id="roleFor"></div>
         <div class="rolename" id="roleName"></div>
         <div class="intel" id="roleIntel"></div>
-        <div class="tapnote">Πάτα για να κρυφτεί</div>
+        <div class="tapnote">Άφησε για να κρυφτεί</div>
       </div>
     </div>
+    <button type="button" class="ghost big" id="guideBtn" style="margin-top:14px">📖 Τι κάνει ο ρόλος μου</button>
     <div id="roleGuide" class="card guide hidden" style="margin-top:14px"></div>
     <details class="card rules">
       <summary>📖 Πώς παίζεται το Παλέρμο</summary>
@@ -567,6 +585,19 @@
   </div>
 </div>
 
+<div class="netbanner hidden" id="netBanner" role="status" aria-live="polite">📡 Χάθηκε η σύνδεση · ξανασυνδέομαι…</div>
+<div class="sheetwrap hidden" id="tour" style="align-items:center;z-index:25">
+  <div class="tourcard" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div class="ti" id="tourIcon"></div>
+    <h2 id="tourTitle"></h2>
+    <p id="tourText"></p>
+    <div class="tourdots" id="tourDots"></div>
+    <div class="tourbtns">
+      <button type="button" class="ghost" id="tourSkip">Παράλειψη</button>
+      <button type="button" id="tourNext">Επόμενο</button>
+    </div>
+  </div>
+</div>
 <input type="file" accept="image/*" id="photoInput" hidden>
 <input type="file" accept="image/*" capture="user" id="photoCam" hidden>
 
@@ -920,8 +951,12 @@ onValue(R("hostPid"), snap => { hostPick = snap.val(); if (gotPlayers && gotGame
 // ---- 🟢 Ποιος είναι συνδεδεμένος ----
 let online = {};
 onValue(R("online"), snap => { online = snap.val() || {}; if (gotPlayers && gotGame) render(); }, () => {});
+let offTimer = null;
 onValue(ref(db, ".info/connected"), snap => {
-  if (snap.val() !== true) return;
+  const on = snap.val() === true;
+  clearTimeout(offTimer);
+  if (!on) { offTimer = setTimeout(() => $("netBanner").classList.remove("hidden"), 2500); return; }
+  $("netBanner").classList.add("hidden");
   const me = R("online/" + pid);
   try { onDisconnect(me).remove(); } catch (e) {}
   set(me, true).catch(() => {});
@@ -1033,6 +1068,7 @@ function render(){
   else { showLobby(); }
   $("hostBtn").classList.toggle("hidden", !amHost());
   $("hostBtnLobby").classList.toggle("hidden", !amHost() || !players[pid]);
+  if (!roleId) maybeTour();
   renderSheet();
 }
 
@@ -1193,13 +1229,27 @@ function renderGuide(roleId){
     + ` (${Object.keys(game.roles || {}).length} παίκτες)`;
 }
 
+let guideOpen = false;
 function applyRoleOpen(){
-  $("roleGuide").classList.toggle("hidden", !roleOpen);
+  $("roleGuide").classList.toggle("hidden", !guideOpen);
+  $("guideBtn").textContent = guideOpen ? "Κρύψε την περιγραφή" : "📖 Τι κάνει ο ρόλος μου";
   $("roleCard").classList.toggle("closed", !roleOpen);
   $("roleClosed").classList.toggle("hidden", roleOpen);
   $("roleOpen").classList.toggle("hidden", !roleOpen);
 }
-$("roleCard").onclick = () => { roleOpen = !roleOpen; applyRoleOpen(); };
+// Ο ρόλος φαίνεται μόνο όσο κρατάς πατημένη την κάρτα
+const rc = $("roleCard");
+const holdOn = e => { if (e && e.cancelable) e.preventDefault(); roleOpen = true; applyRoleOpen(); };
+const holdOff = () => { if (roleOpen) { roleOpen = false; applyRoleOpen(); } };
+rc.addEventListener("pointerdown", e => { try { rc.setPointerCapture(e.pointerId); } catch (x) {} holdOn(e); });
+["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => rc.addEventListener(ev, holdOff));
+rc.addEventListener("contextmenu", e => e.preventDefault());
+rc.tabIndex = 0; rc.setAttribute("role", "button"); rc.setAttribute("aria-label", "Κράτα πατημένο για να δεις τον ρόλο σου");
+rc.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") holdOn(e); });
+rc.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") holdOff(); });
+rc.addEventListener("blur", holdOff);
+document.addEventListener("visibilitychange", () => { if (document.hidden) holdOff(); });
+$("guideBtn").onclick = () => { guideOpen = !guideOpen; applyRoleOpen(); };
 
 // ---- Tabs ----
 function setTab(t){
@@ -1493,6 +1543,9 @@ function renderSheet(){
       }
     };
     if (!$("game").classList.contains("hidden")) more.appendChild(rules);
+    const tb = mk("button", "ghost big", "👋 Σύντομος οδηγός"); tb.type = "button"; tb.style.marginTop = "8px";
+    tb.onclick = () => { closeSheet(); showTour(); };
+    more.appendChild(tb);
     return;
   }
 
@@ -1557,6 +1610,29 @@ async function hostKick(id){
 }
 
 applySettings();
+
+// ---- 👋 Οδηγός πρώτης φοράς ----
+const TOUR = [
+  ["🎭", "Ο ρόλος σου", "Όταν ξεκινήσει το παιχνίδι, παίρνεις κρυφά έναν ρόλο. Στην καρτέλα «Ρόλος» κράτα πατημένη την κάρτα για να τον δεις. Μην τον δείξεις σε κανέναν."],
+  ["🌙", "Τη νύχτα", "Αν ο ρόλος σου έχει δουλειά, θα δεις «Σειρά σου» και διαλέγεις έναν παίκτη. Αλλιώς απλώς περιμένεις να ξημερώσει."],
+  ["☀️", "Τη μέρα", "Πρώτα συζητάτε όσο τρέχει το χρονόμετρο. Μετά ψηφίζετε ποιος θα βγει. Η ψήφος θέλει ✓ και μετά δεν αλλάζει."]
+];
+let tourStep = 0;
+function showTour(){ tourStep = 0; drawTour(); $("tour").classList.remove("hidden"); $("tourNext").focus(); }
+function endTour(){ $("tour").classList.add("hidden"); try { localStorage.setItem("palermo.tourSeen", "1"); } catch (e) {} }
+function drawTour(){
+  const [ic, t, x] = TOUR[tourStep];
+  $("tourIcon").textContent = ic; $("tourTitle").textContent = t; $("tourText").textContent = x;
+  $("tourDots").textContent = ""; TOUR.forEach((_, i) => { const d = document.createElement("span"); if (i === tourStep) d.className = "on"; $("tourDots").appendChild(d); });
+  $("tourNext").textContent = tourStep === TOUR.length - 1 ? "Πάμε!" : "Επόμενο";
+  $("tourSkip").classList.toggle("hidden", tourStep === TOUR.length - 1);
+}
+$("tourNext").onclick = () => { if (tourStep < TOUR.length - 1) { tourStep++; drawTour(); } else endTour(); };
+$("tourSkip").onclick = endTour;
+function maybeTour(){
+  let seen = false; try { seen = localStorage.getItem("palermo.tourSeen") === "1"; } catch (e) {}
+  if (!seen && !TEST && players[pid] && $("tour").classList.contains("hidden")) showTour();
+}
 
 // ---- Join / leave ----
 $("joinForm").addEventListener("submit", async e => {
@@ -2132,7 +2208,7 @@ function renderModals(g, A){
     modal = { type: "phase", end: true, data: phaseSummary(g, prevPk || "") };
     playSound(g.winner === "town" ? "townWin" : "badWin");
   } else if (!roleNeeded && !(modal && modal.type === "death") && g.phase !== "ended" && prevPk && prevPk !== pk && prevPk.split(":")[0] === String(g.round)) {
-    modal = { type: "phase", data: phaseSummary(g, prevPk) };
+    modal = { type: "phase", auto: true, data: phaseSummary(g, prevPk) };
   } else if (!roleNeeded && !modal && prevHistLen != null && H.length > prevHistLen) {
     const e = H[H.length - 1];
     if (e && e.k === "suicide" && e.by !== me && e.target !== me) {
@@ -2140,7 +2216,7 @@ function renderModals(g, A){
       box.appendChild(el("div", "mi", "💥"));
       box.appendChild(el("div", "mt", "Αυτοκτονία Καμικάζι"));
       box.appendChild(el("p", "mp c", `Ο/Η ${nameOf(e.by)} ήταν ο Καμικάζι! Αυτοκτόνησε και πήρε μαζί του τον/την ${nameOf(e.target)}.`));
-      modal = { type: "phase", data: { nodes: [box], btn: "Εντάξει" } };
+      modal = { type: "phase", auto: true, data: { nodes: [box], btn: "Εντάξει" } };
     }
   }
   // 🔄 Νέα αναγνώριση μετά τον Βιαστή (pop-up μία φορά)
@@ -2215,6 +2291,14 @@ function renderModals(g, A){
   } else if (modal.type === "phase") {
     modal.data.nodes.forEach(n => body.appendChild(n));
     btns.appendChild(mbtn(modal.data.btn, () => { closeModal(); setTab("flow"); renderFlow(); }));
+    if (modal.auto) {
+      // κλείνει μόνο του σε λίγα δευτερόλεπτα (με γραμμή που αδειάζει)
+      const AUTO_MS = 6000, m = modal;
+      if (!m.autoAt) { m.autoAt = Date.now(); setTimeout(() => { if (modal === m) { closeModal(); setTab("flow"); renderFlow(); } }, AUTO_MS); }
+      const bar = el("div", "autobar"); const fill = el("span");
+      fill.style.animationDuration = AUTO_MS + "ms"; fill.style.animationDelay = -(Date.now() - m.autoAt) + "ms";
+      bar.appendChild(fill); btns.appendChild(bar);
+    }
   }
   wrap.classList.remove("hidden");
 }
